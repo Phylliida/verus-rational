@@ -187,6 +187,117 @@ SLERP verification.
 
 ---
 
+## 17. Algebraic identities (constraint equation manipulation)
+
+Expanding/factoring distance constraints, e.g. `|p-q|² = (px-qx)² + (py-qy)²`.
+
+- `lemma_square_of_sum(a, b)` — `(a+b)² ≡ a² + 2ab + b²`.
+- `lemma_square_of_difference(a, b)` — `(a-b)² ≡ a² - 2ab + b²`.
+- `lemma_difference_of_squares(a, b)` — `a² - b² ≡ (a+b)(a-b)`.
+
+Useful for: distance constraints, circle equations, polynomial manipulation.
+
+## 18. Double negation & subtraction algebra
+
+Bookkeeping lemmas that appear in every nontrivial constraint proof.
+
+- `lemma_neg_neg(a)` — `-(-a) ≡ a`.
+- `lemma_sub_self(a)` — `a - a ≡ 0`.
+- `lemma_sub_neg(a, b)` — `a - (-b) ≡ a + b`.
+- `lemma_neg_add(a, b)` — `-(a+b) ≡ -a + -b`.
+- `lemma_neg_sub(a, b)` — `-(a-b) ≡ b - a`.
+
+Useful for: every nontrivial constraint manipulation proof.
+
+## 19. Extended division / reciprocal
+
+Needed for Cramer's rule and parametric computation.
+
+- `lemma_reciprocal_of_product(a, b)` —
+  `a ≢ 0 ∧ b ≢ 0 → (a*b)⁻¹ ≡ a⁻¹ * b⁻¹`.
+- `lemma_div_mul_assoc(a, b, c)` —
+  `b ≢ 0 → (a/b)*c ≡ (a*c)/b`.
+- `lemma_div_neg_denominator(a, b, c)` —
+  `a ≤ b ∧ c < 0 → b/c ≤ a/c` (order reversal).
+
+Useful for: Cramer's rule, compound fraction simplification, parametric
+computation.
+
+## 20. 2×2 determinant & Cramer's rule
+
+Core of line-line intersection and orient2d predicates.
+
+- `det2_spec(a, b, c, d)` — spec function `a*d - b*c`.
+- `lemma_cramer2_satisfies(a, b, c, d, e, f)` —
+  when `det ≢ 0`, the Cramer solution
+  `x = (d*e - b*f)/det, y = (a*f - c*e)/det`
+  satisfies `a*x + b*y ≡ e ∧ c*x + d*y ≡ f`.
+- `lemma_det2_antisymmetric(a, b, c, d)` —
+  `det2(c, d, a, b) ≡ -det2(a, b, c, d)`.
+- `lemma_det2_zero_iff_proportional(a, b, c, d)` —
+  `det2 ≡ 0 ↔ a*d ≡ b*c` (collinearity test).
+
+Useful for: line-line intersection, orientation predicates, collinearity.
+
+## 21. Quadratic discriminant
+
+For circle-line, circle-circle intersection count.
+
+- `discriminant_spec(a, b, c)` — spec function `b² - 4ac`.
+- `lemma_quadratic_at_rational_root(a, b, c, t)` —
+  `a*t*t + b*t + c ≡ 0` verification (check a candidate root).
+- `lemma_quadratic_double_root(a, b, c)` —
+  `disc ≡ 0 ∧ a ≢ 0 → a * (-b/(2a))² + b*(-b/(2a)) + c ≡ 0`.
+- `lemma_discriminant_nonneg_square(a, b, c, t)` —
+  `a*t² + b*t + c ≡ 0 ∧ a ≢ 0 → disc ≥ 0`.
+
+Useful for: circle-line intersection, tangency detection, constraint
+feasibility.
+
+## 22. Integer power / polynomial evaluation
+
+For constraint polynomial evaluation.
+
+- `pow_spec(a, n: nat)` — spec function `a^n`.
+- `lemma_pow_zero(a)` — `a^0 ≡ 1`.
+- `lemma_pow_one(a)` — `a^1 ≡ a`.
+- `lemma_pow_two(a)` — `a^2 ≡ a*a`.
+- `lemma_pow_succ(a, n)` — `a^(n+1) ≡ a^n * a`.
+- `lemma_pow_mul(a, b, n)` — `(a*b)^n ≡ a^n * b^n`.
+- `lemma_pow_add(a, m, n)` — `a^(m+n) ≡ a^m * a^n`.
+- `lemma_pow_even_nonneg(a, n)` — `0 ≤ a^(2n)`.
+
+Useful for: polynomial evaluation, Horner's method, constraint degree
+analysis.
+
+## 23. Interval containment
+
+For robust geometry and bounding-box proofs.
+
+- `lemma_add_interval(a, lo_a, hi_a, b, lo_b, hi_b)` —
+  `a ∈ [lo_a, hi_a] ∧ b ∈ [lo_b, hi_b] → a+b ∈ [lo_a+lo_b, hi_a+hi_b]`.
+- `lemma_mul_interval_nonneg(a, lo_a, hi_a, b, lo_b, hi_b)` —
+  both non-negative: `a*b ∈ [lo_a*lo_b, hi_a*hi_b]`.
+- `lemma_interval_contains_midpoint(lo, hi)` —
+  `lo ≤ hi → lo ≤ midpoint(lo,hi) ≤ hi`.
+
+Useful for: bounding-box containment, interval subdivision, robust
+geometry.
+
+## 24. Cauchy–Schwarz (squared form)
+
+For angle bounds and distance estimates, provable without square roots.
+
+- `lemma_cauchy_schwarz_2d(a, b, c, d)` —
+  `(a*c + b*d)² ≤ (a² + b²)(c² + d²)`.
+- `lemma_cauchy_schwarz_3d(a, b, c, d, e, f)` —
+  `(a*d + b*e + c*f)² ≤ (a² + b² + c²)(d² + e² + f²)`.
+
+Useful for: dot-product bounds, angle constraints, projection length
+bounds.
+
+---
+
 ## Notes
 
 - All spec lemmas go in `rational.rs` (ghost model).

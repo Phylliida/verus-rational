@@ -4814,6 +4814,305 @@ impl Rational {
             assert(sum.num == 0);
         }
     }
+
+    // ── Subtraction algebra (item 18) ─────────────────────────────────
+
+    /// a - a ≡ 0.
+    pub proof fn lemma_sub_self(a: Self)
+        ensures
+            a.sub_spec(a).eqv_spec(Self::from_int_spec(0)),
+    {
+        Self::lemma_sub_eqv_zero_iff_eqv(a, a);
+        Self::lemma_eqv_reflexive(a);
+    }
+
+    /// a - (-b) == a + b (structural).
+    pub proof fn lemma_sub_neg(a: Self, b: Self)
+        ensures
+            a.sub_spec(b.neg_spec()) == a.add_spec(b),
+    {
+        // sub_spec(x,y) = x.add_spec(y.neg_spec())
+        // so a.sub_spec(b.neg_spec()) = a.add_spec(b.neg_spec().neg_spec())
+        // and neg_involution gives b.neg_spec().neg_spec() == b
+        Self::lemma_neg_involution(b);
+    }
+
+    /// -(a - b) == b - a (structural).
+    pub proof fn lemma_neg_sub(a: Self, b: Self)
+        ensures
+            a.sub_spec(b).neg_spec() == b.sub_spec(a),
+    {
+        // Already proved as lemma_sub_antisymmetric with reversed direction
+        Self::lemma_sub_antisymmetric(b, a);
+        // b.sub_spec(a) == a.sub_spec(b).neg_spec() -- that's the wrong direction
+        // lemma_sub_antisymmetric(a, b) gives a.sub_spec(b) == b.sub_spec(a).neg_spec()
+        // We need: a.sub_spec(b).neg_spec() == b.sub_spec(a)
+        // From antisymmetric: a - b == -(b - a), so -(a-b) == --(b-a) == b-a
+        Self::lemma_sub_antisymmetric(a, b);
+        // a.sub_spec(b) == b.sub_spec(a).neg_spec()
+        // so a.sub_spec(b).neg_spec() == b.sub_spec(a).neg_spec().neg_spec()
+        Self::lemma_neg_involution(b.sub_spec(a));
+        // b.sub_spec(a).neg_spec().neg_spec() == b.sub_spec(a)
+    }
+
+    // ── Algebraic identities (item 17) ────────────────────────────────
+
+    /// x + x ≡ 2 * x.
+    pub proof fn lemma_double(x: Self)
+        ensures
+            x.add_spec(x).eqv_spec(Self::from_int_spec(2).mul_spec(x)),
+    {
+        let xx = x.add_spec(x);
+        let two_x = Self::from_int_spec(2).mul_spec(x);
+        Self::lemma_denom_positive(x);
+        Self::lemma_add_denom_product_int(x, x);
+        Self::lemma_mul_denom_product_int(Self::from_int_spec(2), x);
+        // xx.num = x.num * x.denom() + x.num * x.denom() = 2 * x.num * x.denom()
+        // xx.denom() = x.denom() * x.denom()
+        // two_x.num = 2 * x.num, two_x.denom() = 1 * x.denom() = x.denom()
+        assert(Self::from_int_spec(2).num == 2);
+        assert(Self::from_int_spec(2).denom() == 1);
+        assert(two_x.num == 2 * x.num);
+        assert(two_x.denom() == x.denom());
+        assert(xx.num == x.num * x.denom() + x.num * x.denom());
+        assert(xx.denom() == x.denom() * x.denom());
+        // eqv: xx.num * two_x.denom() == two_x.num * xx.denom()
+        // (2 * x.num * x.denom()) * x.denom() == (2 * x.num) * (x.denom() * x.denom())
+        assert(xx.num * two_x.denom() == two_x.num * xx.denom()) by (nonlinear_arith)
+            requires
+                xx.num == x.num * x.denom() + x.num * x.denom(),
+                xx.denom() == x.denom() * x.denom(),
+                two_x.num == 2 * x.num,
+                two_x.denom() == x.denom();
+    }
+
+    /// (a+b)² ≡ a² + 2ab + b².
+    pub proof fn lemma_square_of_sum(a: Self, b: Self)
+        ensures
+            a.add_spec(b).mul_spec(a.add_spec(b)).eqv_spec(
+                a.mul_spec(a).add_spec(
+                    Self::from_int_spec(2).mul_spec(a.mul_spec(b))
+                ).add_spec(b.mul_spec(b))),
+    {
+        let s = a.add_spec(b);
+        let lhs = s.mul_spec(s);
+        let aa = a.mul_spec(a);
+        let ab = a.mul_spec(b);
+        let bb = b.mul_spec(b);
+        let two = Self::from_int_spec(2);
+        let two_ab = two.mul_spec(ab);
+
+        // (a+b)*(a+b) ≡ (a+b)*a + (a+b)*b
+        Self::lemma_eqv_mul_distributive_left(s, a, b);
+        // s*a ≡ a*a + b*a
+        Self::lemma_eqv_mul_distributive_right(a, b, a);
+        // s*b ≡ a*b + b*b
+        Self::lemma_eqv_mul_distributive_right(a, b, b);
+        // So lhs ≡ (aa + ba) + (ab + bb)
+        let ba = b.mul_spec(a);
+        Self::lemma_mul_commutative(b, a);
+        assert(ba == ab);
+        // lhs ≡ (aa + ab) + (ab + bb)
+        // Need: (aa + ab) + (ab + bb) ≡ aa + 2ab + bb
+        // i.e. (aa + ab) + (ab + bb) ≡ (aa + 2ab) + bb
+        // Use associativity: (aa + ab) + (ab + bb) ≡ aa + (ab + (ab + bb))
+        Self::lemma_add_associative(aa, ab, ab.add_spec(bb));
+        // ab + (ab + bb) ≡ (ab + ab) + bb
+        Self::lemma_add_associative(ab, ab, bb);
+        Self::lemma_eqv_symmetric(ab.add_spec(ab).add_spec(bb), ab.add_spec(ab.add_spec(bb)));
+        // ab + ab ≡ 2*ab
+        Self::lemma_double(ab);
+        // Chain: (ab + ab) + bb ≡ 2ab + bb
+        Self::lemma_eqv_add_congruence_left(ab.add_spec(ab), two_ab, bb);
+        // So ab + (ab + bb) ≡ 2ab + bb
+        Self::lemma_eqv_transitive(
+            ab.add_spec(ab.add_spec(bb)),
+            ab.add_spec(ab).add_spec(bb),
+            two_ab.add_spec(bb),
+        );
+        // aa + (ab + (ab + bb)) ≡ aa + (2ab + bb)
+        Self::lemma_eqv_add_congruence_right(
+            aa,
+            ab.add_spec(ab.add_spec(bb)),
+            two_ab.add_spec(bb),
+        );
+        // aa + (2ab + bb) ≡ (aa + 2ab) + bb
+        Self::lemma_add_associative(aa, two_ab, bb);
+        // Chain: lhs ≡ s*a + s*b ≡ (aa+ab) + (ab+bb)
+        Self::lemma_eqv_add_congruence(
+            s.mul_spec(a), aa.add_spec(ab),
+            s.mul_spec(b), ab.add_spec(bb),
+        );
+        Self::lemma_eqv_transitive(lhs, s.mul_spec(a).add_spec(s.mul_spec(b)),
+            aa.add_spec(ab).add_spec(ab.add_spec(bb)));
+        // ≡ aa + (ab + (ab + bb))
+        Self::lemma_eqv_transitive(lhs, aa.add_spec(ab).add_spec(ab.add_spec(bb)),
+            aa.add_spec(ab.add_spec(ab.add_spec(bb))));
+        // ≡ aa + (2ab + bb)
+        Self::lemma_eqv_transitive(lhs,
+            aa.add_spec(ab.add_spec(ab.add_spec(bb))),
+            aa.add_spec(two_ab.add_spec(bb)));
+        // ≡ (aa + 2ab) + bb
+        Self::lemma_eqv_transitive(lhs,
+            aa.add_spec(two_ab.add_spec(bb)),
+            aa.add_spec(two_ab).add_spec(bb));
+    }
+
+    /// (a-b)² ≡ a² - 2ab + b².
+    pub proof fn lemma_square_of_difference(a: Self, b: Self)
+        ensures
+            a.sub_spec(b).mul_spec(a.sub_spec(b)).eqv_spec(
+                a.mul_spec(a).sub_spec(
+                    Self::from_int_spec(2).mul_spec(a.mul_spec(b))
+                ).add_spec(b.mul_spec(b))),
+    {
+        // (a - b) = a + (-b), so (a-b)² = (a+(-b))²
+        let nb = b.neg_spec();
+        // Apply square_of_sum to a, -b:
+        // (a+(-b))² ≡ a² + 2*a*(-b) + (-b)²
+        Self::lemma_square_of_sum(a, nb);
+        // Now relate terms:
+        // a*(-b) == -(a*b): num differs by a.num*(-b.num) vs -(a.num*b.num)
+        assert(a.num * (-b.num) == -(a.num * b.num)) by (nonlinear_arith);
+        assert(a.mul_spec(nb) == a.mul_spec(b).neg_spec());
+        // nb*nb == b*b
+        assert(nb.mul_spec(nb).num == b.num * b.num) by (nonlinear_arith)
+            requires nb.num == -b.num;
+        assert(nb.mul_spec(nb).den == b.mul_spec(b).den);
+        assert(nb.mul_spec(nb) == b.mul_spec(b));
+        // 2*a*(-b) = 2*(-(a*b)) = -(2*(a*b))
+        let ab = a.mul_spec(b);
+        let nab = ab.neg_spec();
+        let two = Self::from_int_spec(2);
+        assert(two.mul_spec(nab) == two.mul_spec(ab).neg_spec());
+        // So a² + 2*a*nb + nb² ≡ a² + (-(2ab)) + b²
+        //                       ≡ a² - 2ab + b²
+        // a² - 2ab = a².add_spec((2ab).neg_spec()) = a².sub_spec(2ab)? No:
+        // sub_spec(x,y) = x.add_spec(y.neg_spec())
+        // a².sub_spec(2ab) = a².add_spec((2ab).neg_spec()) = a².add_spec(-(2ab))
+        let aa = a.mul_spec(a);
+        let two_ab = two.mul_spec(ab);
+        let two_nab = two.mul_spec(nab);
+        // two_nab == two_ab.neg_spec() (shown above)
+        // So aa.add_spec(two_nab) == aa.add_spec(two_ab.neg_spec()) == aa.sub_spec(two_ab)
+        assert(aa.add_spec(two_nab) == aa.sub_spec(two_ab));
+        // The ensures of square_of_sum gives:
+        // s.mul_spec(s) ≡ aa.add_spec(two.mul_spec(a.mul_spec(nb))).add_spec(nb.mul_spec(nb))
+        // = aa.add_spec(two_nab).add_spec(b.mul_spec(b))
+        // = aa.sub_spec(two_ab).add_spec(bb) ✓
+    }
+
+    /// a² - b² ≡ (a+b)(a-b).
+    pub proof fn lemma_difference_of_squares(a: Self, b: Self)
+        ensures
+            a.mul_spec(a).sub_spec(b.mul_spec(b)).eqv_spec(
+                a.add_spec(b).mul_spec(a.sub_spec(b))),
+    {
+        // (a+b)(a-b) = (a+b)(a+(-b))
+        // Use distributive: (a+b)*(a+(-b)) ≡ (a+b)*a + (a+b)*(-b)
+        let s = a.add_spec(b);
+        let d = a.sub_spec(b); // = a.add_spec(b.neg_spec())
+        let nb = b.neg_spec();
+        let rhs = s.mul_spec(d);
+        let aa = a.mul_spec(a);
+        let bb = b.mul_spec(b);
+        let lhs = aa.sub_spec(bb);
+
+        // (a+b)*(a+(-b)) ≡ (a+b)*a + (a+b)*(-b)
+        Self::lemma_eqv_mul_distributive_left(s, a, nb);
+        // (a+b)*a ≡ a*a + b*a
+        Self::lemma_eqv_mul_distributive_right(a, b, a);
+        // (a+b)*(-b) ≡ a*(-b) + b*(-b)
+        Self::lemma_eqv_mul_distributive_right(a, b, nb);
+
+        let ba = b.mul_spec(a);
+        let anb = a.mul_spec(nb);
+        let bnb = b.mul_spec(nb);
+
+        Self::lemma_mul_commutative(b, a);
+        assert(ba == a.mul_spec(b));
+        let ab = a.mul_spec(b);
+
+        // a*(-b) == -(a*b): num a.num*(-b.num) vs -(a.num*b.num)
+        assert(a.num * (-b.num) == -(a.num * b.num)) by (nonlinear_arith);
+        assert(anb == ab.neg_spec());
+        // b*(-b): num = b.num * (-b.num), same den as b*b
+        // -(b*b): num = -(b.num * b.num) = b.num * (-b.num) by nonlinear_arith
+        assert(b.num * (-b.num) == -(b.num * b.num)) by (nonlinear_arith);
+        assert(bnb == bb.neg_spec());
+
+        // So rhs ≡ (aa + ab) + (-(ab) + -(bb))
+        //        ≡ (aa + ab) + (-(ab + bb))  by neg_add
+        Self::lemma_neg_add(ab, bb);
+        assert(ab.neg_spec().add_spec(bb.neg_spec()) == ab.add_spec(bb).neg_spec());
+        // (aa + ab) + (-(ab + bb))
+        // = (aa + ab).sub_spec(ab + bb)? No, it's add with neg.
+        // = (aa + ab).add_spec((ab + bb).neg_spec())
+        // = (aa + ab).sub_spec(ab.add_spec(bb))
+        // Need to show this ≡ aa - bb.
+
+        // aa + ab - (ab + bb):
+        // Use sub_add_distributes or work step by step:
+        // (aa + ab) + (-(ab) + -(bb))
+        // ≡ aa + (ab + (-(ab) + -(bb)))  by add_assoc
+        Self::lemma_add_associative(aa, ab, ab.neg_spec().add_spec(bb.neg_spec()));
+        // ab + (-(ab) + -(bb)) ≡ (ab + -(ab)) + -(bb)  by add_assoc
+        Self::lemma_add_associative(ab, ab.neg_spec(), bb.neg_spec());
+        Self::lemma_eqv_symmetric(
+            ab.add_spec(ab.neg_spec()).add_spec(bb.neg_spec()),
+            ab.add_spec(ab.neg_spec().add_spec(bb.neg_spec())),
+        );
+        // ab + -(ab) ≡ 0
+        Self::lemma_sub_self(ab);
+        // Note: ab.add_spec(ab.neg_spec()) == ab.sub_spec(ab) structurally
+        // ab + -(ab) + -(bb) ≡ 0 + -(bb)
+        Self::lemma_eqv_add_congruence_left(
+            ab.add_spec(ab.neg_spec()),
+            Self::from_int_spec(0),
+            bb.neg_spec(),
+        );
+        // 0 + -(bb) == -(bb)  structurally
+        Self::lemma_add_zero_identity(bb.neg_spec());
+        // So ab + (-(ab) + -(bb)) ≡ -(bb)
+        Self::lemma_eqv_transitive(
+            ab.add_spec(ab.neg_spec().add_spec(bb.neg_spec())),
+            ab.add_spec(ab.neg_spec()).add_spec(bb.neg_spec()),
+            Self::from_int_spec(0).add_spec(bb.neg_spec()),
+        );
+        // aa + (ab + (-(ab) + -(bb))) ≡ aa + -(bb)
+        Self::lemma_eqv_add_congruence_right(
+            aa,
+            ab.add_spec(ab.neg_spec().add_spec(bb.neg_spec())),
+            bb.neg_spec(),
+        );
+        // aa + -(bb) == aa.sub_spec(bb) structurally
+        assert(aa.add_spec(bb.neg_spec()) == aa.sub_spec(bb));
+        // Chain everything for rhs:
+        // rhs ≡ s*a + s*nb
+        Self::lemma_eqv_add_congruence(
+            s.mul_spec(a), aa.add_spec(ab),
+            s.mul_spec(nb), anb.add_spec(bnb),
+        );
+        // = (aa + ab) + (-(ab) + -(bb))
+        // ≡ aa + (ab + (-(ab) + -(bb)))
+        Self::lemma_eqv_transitive(
+            rhs,
+            s.mul_spec(a).add_spec(s.mul_spec(nb)),
+            aa.add_spec(ab).add_spec(anb.add_spec(bnb)),
+        );
+        Self::lemma_eqv_transitive(
+            rhs,
+            aa.add_spec(ab).add_spec(anb.add_spec(bnb)),
+            aa.add_spec(ab.add_spec(anb.add_spec(bnb))),
+        );
+        Self::lemma_eqv_transitive(
+            rhs,
+            aa.add_spec(ab.add_spec(anb.add_spec(bnb))),
+            aa.add_spec(bb.neg_spec()),
+        );
+        // rhs ≡ lhs
+        Self::lemma_eqv_symmetric(rhs, lhs);
+    }
 }
 
 /// Alias for backward compatibility with code that used the RationalModel name.
