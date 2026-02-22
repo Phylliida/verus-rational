@@ -187,7 +187,7 @@ SLERP verification.
 
 ---
 
-## 17. Algebraic identities (constraint equation manipulation)
+## 17. Algebraic identities (constraint equation manipulation)  ✅
 
 Expanding/factoring distance constraints, e.g. `|p-q|² = (px-qx)² + (py-qy)²`.
 
@@ -197,7 +197,7 @@ Expanding/factoring distance constraints, e.g. `|p-q|² = (px-qx)² + (py-qy)²`
 
 Useful for: distance constraints, circle equations, polynomial manipulation.
 
-## 18. Double negation & subtraction algebra
+## 18. Double negation & subtraction algebra  ✅
 
 Bookkeeping lemmas that appear in every nontrivial constraint proof.
 
@@ -209,7 +209,7 @@ Bookkeeping lemmas that appear in every nontrivial constraint proof.
 
 Useful for: every nontrivial constraint manipulation proof.
 
-## 19. Extended division / reciprocal
+## 19. Extended division / reciprocal  ✅
 
 Needed for Cramer's rule and parametric computation.
 
@@ -223,7 +223,7 @@ Needed for Cramer's rule and parametric computation.
 Useful for: Cramer's rule, compound fraction simplification, parametric
 computation.
 
-## 20. 2×2 determinant & Cramer's rule
+## 20. 2×2 determinant & Cramer's rule  ✅
 
 Core of line-line intersection and orient2d predicates.
 
@@ -239,7 +239,7 @@ Core of line-line intersection and orient2d predicates.
 
 Useful for: line-line intersection, orientation predicates, collinearity.
 
-## 21. Quadratic discriminant
+## 21. Quadratic discriminant  ✅
 
 For circle-line, circle-circle intersection count.
 
@@ -254,7 +254,7 @@ For circle-line, circle-circle intersection count.
 Useful for: circle-line intersection, tangency detection, constraint
 feasibility.
 
-## 22. Integer power / polynomial evaluation
+## 22. Integer power / polynomial evaluation  ✅
 
 For constraint polynomial evaluation.
 
@@ -270,7 +270,7 @@ For constraint polynomial evaluation.
 Useful for: polynomial evaluation, Horner's method, constraint degree
 analysis.
 
-## 23. Interval containment
+## 23. Interval containment  ✅
 
 For robust geometry and bounding-box proofs.
 
@@ -284,7 +284,7 @@ For robust geometry and bounding-box proofs.
 Useful for: bounding-box containment, interval subdivision, robust
 geometry.
 
-## 24. Cauchy–Schwarz (squared form)
+## 24. Cauchy–Schwarz (squared form)  ✅
 
 For angle bounds and distance estimates, provable without square roots.
 
