@@ -530,6 +530,79 @@ impl Rational {
             by (nonlinear_arith);
     }
 
+    /// Reciprocal reverses order for positive rationals: 0 < a <= b => 1/b <= 1/a.
+    pub proof fn lemma_reciprocal_reverses_le_pos(a: Self, b: Self)
+        requires
+            Self::from_int_spec(0).lt_spec(a),
+            a.le_spec(b),
+        ensures
+            b.reciprocal_spec().le_spec(a.reciprocal_spec()),
+    {
+        Self::lemma_denom_positive(a);
+        Self::lemma_denom_positive(b);
+        let zero = Self::from_int_spec(0);
+        assert(a.num > 0) by (nonlinear_arith)
+            requires zero.lt_spec(a), a.denom() > 0, zero.num == 0, zero.denom() == 1;
+        assert(b.num > 0) by (nonlinear_arith)
+            requires a.le_spec(b), a.num > 0, b.denom() > 0;
+        let ra = a.reciprocal_spec();
+        let rb = b.reciprocal_spec();
+        // For positive a: reciprocal has num = a.denom(), denom() = a.num.
+        assert(ra.num == a.denom());
+        assert(ra.den == (a.num as nat - 1) as nat);
+        assert(rb.num == b.denom());
+        assert(rb.den == (b.num as nat - 1) as nat);
+        // ra.denom() = ra.den as int + 1 = (a.num - 1) + 1 = a.num
+        assert(ra.denom() == a.num) by (nonlinear_arith)
+            requires a.num > 0, ra.den == (a.num as nat - 1) as nat;
+        assert(rb.denom() == b.num) by (nonlinear_arith)
+            requires b.num > 0, rb.den == (b.num as nat - 1) as nat;
+        // rb.le_spec(ra) = rb.num * ra.denom() <= ra.num * rb.denom()
+        //                = b.denom() * a.num <= a.denom() * b.num
+        //                = a.num * b.denom() <= b.num * a.denom()  (commutativity)
+        //                = a.le_spec(b)  ✓
+        assert(rb.le_spec(ra)) by (nonlinear_arith)
+            requires a.le_spec(b),
+                rb.num == b.denom(), rb.denom() == b.num,
+                ra.num == a.denom(), ra.denom() == a.num;
+    }
+
+    /// Reciprocal reverses order for negative rationals: a <= b < 0 => 1/b <= 1/a.
+    pub proof fn lemma_reciprocal_reverses_le_neg(a: Self, b: Self)
+        requires
+            b.lt_spec(Self::from_int_spec(0)),
+            a.le_spec(b),
+        ensures
+            b.reciprocal_spec().le_spec(a.reciprocal_spec()),
+    {
+        Self::lemma_denom_positive(a);
+        Self::lemma_denom_positive(b);
+        let zero = Self::from_int_spec(0);
+        assert(b.num < 0) by (nonlinear_arith)
+            requires b.lt_spec(zero), b.denom() > 0, zero.num == 0, zero.denom() == 1;
+        assert(a.num < 0) by (nonlinear_arith)
+            requires a.le_spec(b), b.num < 0, a.denom() > 0;
+        let ra = a.reciprocal_spec();
+        let rb = b.reciprocal_spec();
+        // For negative a: reciprocal has num = -a.denom(), denom() = -a.num.
+        assert(ra.num == -a.denom());
+        assert(ra.den == ((-a.num) as nat - 1) as nat);
+        assert(rb.num == -b.denom());
+        assert(rb.den == ((-b.num) as nat - 1) as nat);
+        assert(ra.denom() == -a.num) by (nonlinear_arith)
+            requires a.num < 0, ra.den == ((-a.num) as nat - 1) as nat;
+        assert(rb.denom() == -b.num) by (nonlinear_arith)
+            requires b.num < 0, rb.den == ((-b.num) as nat - 1) as nat;
+        // rb.le_spec(ra) = rb.num * ra.denom() <= ra.num * rb.denom()
+        //                = (-b.denom()) * (-a.num) <= (-a.denom()) * (-b.num)
+        //                = b.denom() * a.num <= a.denom() * b.num
+        //                = a.le_spec(b)  ✓
+        assert(rb.le_spec(ra)) by (nonlinear_arith)
+            requires a.le_spec(b),
+                rb.num == -b.denom(), rb.denom() == -b.num,
+                ra.num == -a.denom(), ra.denom() == -a.num;
+    }
+
 }
 
 } // verus!

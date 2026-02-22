@@ -31,6 +31,128 @@ pub struct RuntimeRational {
     pub model: Ghost<RationalModel>,
 }
 
+// ── GCD infrastructure ─────────────────────────────────────────────────
+
+/// Spec-level GCD via Euclidean algorithm on naturals.
+pub open spec fn gcd_spec(a: nat, b: nat) -> nat
+    decreases b
+{
+    if b == 0 { a } else { gcd_spec(b, (a % b) as nat) }
+}
+
+/// GCD divides both inputs when at least one is positive.
+///
+/// Ensures:
+///   - `gcd_spec(a, b) > 0` when `a > 0 || b > 0`
+///   - `gcd_spec(a, b)` divides `a`  (i.e. `a % g == 0`)
+///   - `gcd_spec(a, b)` divides `b`  (i.e. `b % g == 0`)
+proof fn lemma_gcd_properties(a: nat, b: nat)
+    requires
+        a > 0 || b > 0,
+    ensures
+        gcd_spec(a, b) > 0,
+        a as int % gcd_spec(a, b) as int == 0,
+        b as int % gcd_spec(a, b) as int == 0,
+    decreases b
+{
+    if b == 0 {
+        // gcd(a, 0) = a.  a > 0 (since at least one > 0 and b == 0).
+        // a % a == 0 and 0 % a == 0.
+        assert(gcd_spec(a, b) == a);
+        assert(a > 0);
+        assert(a as int % a as int == 0) by (nonlinear_arith)
+            requires a > 0;
+        assert(0int % (a as int) == 0) by (nonlinear_arith)
+            requires a > 0;
+    } else {
+        // gcd(a, b) = gcd(b, a % b).
+        // b > 0, so b > 0 || (a%b) > 0, enabling the recursive call.
+        let r: nat = (a % b) as nat;
+        assert(r == (a % b) as nat);
+        assert(r < b) by {
+            assert(a as int % (b as int) < b as int)
+                by (nonlinear_arith) requires b > 0;
+        }
+
+        // Recurse: gcd(b, r) divides b and r.
+        lemma_gcd_properties(b, r);
+        let g = gcd_spec(b, r);
+        assert(gcd_spec(a, b) == g);
+        assert(g > 0);
+        assert(b as int % g as int == 0);
+        assert(r as int % g as int == 0);
+
+        // Need to show: a % g == 0.
+        // We have: a = (a/b)*b + r  (Euclidean division).
+        // g | b and g | r, so g | a.
+        let q: nat = (a / b) as nat;
+        assert(a == q * b + r) by {
+            assert(a as int == (a as int / b as int) * b as int + a as int % b as int)
+                by (nonlinear_arith) requires b > 0;
+        }
+
+        // Since g | b: b = kb * g for some kb.
+        let kb: int = b as int / g as int;
+        assert(b as int == kb * g as int) by {
+            assert(b as int == (b as int / g as int) * g as int + b as int % g as int)
+                by (nonlinear_arith) requires g > 0;
+        }
+
+        // Since g | r: r = kr * g for some kr.
+        let kr: int = r as int / g as int;
+        assert(r as int == kr * g as int) by {
+            assert(r as int == (r as int / g as int) * g as int + r as int % g as int)
+                by (nonlinear_arith) requires g > 0;
+        }
+
+        // a = q*b + r = q*kb*g + kr*g = (q*kb + kr)*g
+        assert(a as int == (q as int * kb + kr) * g as int) by (nonlinear_arith)
+            requires
+                a == q * b + r,
+                b as int == kb * g as int,
+                r as int == kr * g as int;
+
+        // Therefore a % g == 0.
+        assert(a as int % g as int == 0) by (nonlinear_arith)
+            requires
+                a as int == (q as int * kb + kr) * g as int,
+                g > 0;
+    }
+}
+
+/// Exec-level GCD on BigNat witnesses using the Euclidean algorithm.
+fn gcd_bignat(a: RuntimeBigNatWitness, b: RuntimeBigNatWitness) -> (out: RuntimeBigNatWitness)
+    requires
+        a.wf_spec(),
+        b.wf_spec(),
+        a.model@ > 0 || b.model@ > 0,
+    ensures
+        out.wf_spec(),
+        out.model@ == gcd_spec(a.model@, b.model@),
+        out.model@ > 0,
+    decreases b.model@
+{
+    let b_is_zero = b.is_zero();
+    if b_is_zero {
+        proof {
+            assert(gcd_spec(a.model@, 0) == a.model@);
+        }
+        a
+    } else {
+        let (_, r) = a.div_rem(&b);
+        proof {
+            // r.model@ == a.model@ % b.model@ and r.model@ < b.model@
+            assert(r.model@ == a.model@ % b.model@);
+            assert(r.model@ < b.model@);
+            // gcd(a, b) = gcd(b, a%b) = gcd(b, r)
+            assert(gcd_spec(a.model@, b.model@)
+                == gcd_spec(b.model@, (a.model@ % b.model@) as nat));
+            assert((a.model@ % b.model@) as nat == r.model@);
+        }
+        gcd_bignat(b, r)
+    }
+}
+
 impl RuntimeRational {
     /// Well-formedness predicate: the runtime witnesses are consistent with
     /// the ghost model.
@@ -92,6 +214,84 @@ impl RuntimeRational {
             assert(out.wf_spec());
         }
         out
+    }
+
+    /// Construct a rational from a numerator/denominator pair.
+    /// The sign of the denominator is normalized so the effective
+    /// denominator is always positive.
+    pub fn from_frac(num: i64, den: i64) -> (out: Self)
+        requires
+            den != 0i64,
+        ensures
+            out@ == RationalModel::from_frac_spec(num as int, den as int),
+            out.wf_spec(),
+    {
+        let big_num = RuntimeBigIntWitness::from_i64(num);
+        let big_den = RuntimeBigIntWitness::from_i64(den);
+        let abs_den = big_den.abs();
+
+        if den > 0 {
+            let out = RuntimeRational {
+                numerator: big_num,
+                denominator: abs_den,
+                model: Ghost(RationalModel::from_frac_spec(num as int, den as int)),
+            };
+            proof {
+                // from_frac_spec(num, den) when den > 0:
+                //   Rational { num: num, den: (den - 1) as nat }
+                // So model.num = num, model.denom() = den
+                assert(out@.num == num as int);
+                assert(out@.denom() == den as int);
+
+                // Witnesses: numerator.model@ = num, denominator.model@ = |den| = den
+                assert(out.numerator.model@ == num as int);
+                assert(out.denominator.model@ == RuntimeBigIntWitness::abs_model_spec(den as int));
+                assert(den > 0);
+                assert(RuntimeBigIntWitness::abs_model_spec(den as int) == (den as int) as nat);
+                assert(out.denominator.model@ == den as nat);
+                assert(out.denominator.model@ > 0);
+
+                // Cross-multiplication: num * den == num * den
+                assert(out.numerator.model@ * out@.denom()
+                    == out@.num * (out.denominator.model@ as int));
+            }
+            out
+        } else {
+            // den < 0: negate numerator, use |den| as denominator
+            let neg_num = big_num.neg();
+            let out = RuntimeRational {
+                numerator: neg_num,
+                denominator: abs_den,
+                model: Ghost(RationalModel::from_frac_spec(num as int, den as int)),
+            };
+            proof {
+                // from_frac_spec(num, den) when den < 0:
+                //   Rational { num: -num, den: (-den - 1) as nat }
+                // So model.num = -num, model.denom() = -den
+                assert(den < 0);
+                assert(out@.num == -(num as int));
+                assert(out@.denom() == -(den as int));
+
+                // Witnesses: numerator.model@ = -num, denominator.model@ = |den| = -den
+                assert(out.numerator.model@ == -(num as int));
+                assert(RuntimeBigIntWitness::abs_model_spec(den as int) == (-(den as int)) as nat);
+                assert(out.denominator.model@ == (-(den as int)) as nat);
+                assert((den < 0) ==> (-(den as int)) > 0) by (nonlinear_arith);
+                assert(out.denominator.model@ > 0);
+
+                // Cross-multiplication: (-num) * (-den) == (-num) * (-den)
+                assert(
+                    out.numerator.model@ * out@.denom()
+                        == out@.num * (out.denominator.model@ as int)
+                ) by (nonlinear_arith)
+                    requires
+                        out.numerator.model@ == -(num as int),
+                        out@.denom() == -(den as int),
+                        out@.num == -(num as int),
+                        out.denominator.model@ == (-(den as int)) as nat;
+            }
+            out
+        }
     }
 
     /// Addition: a/b + c/d = (a*d + c*b) / (b*d)
@@ -395,6 +595,8 @@ impl RuntimeRational {
                 Option::None => true,
                 Option::Some(r) => {
                     &&& !self@.eqv_spec(RationalModel::from_int_spec(0))
+                    &&& r@ == self@.reciprocal_spec()
+                    &&& r.wf_spec()
                     &&& self@.mul_spec(r@).eqv_spec(RationalModel::from_int_spec(1))
                     &&& r@.mul_spec(self@).eqv_spec(RationalModel::from_int_spec(1))
                 },
@@ -431,8 +633,75 @@ impl RuntimeRational {
                 assert(!self@.eqv_spec(RationalModel::from_int_spec(0)));
 
                 assert(inv == out@);
+                assert(out@ == self@.reciprocal_spec());
                 assert(self@.mul_spec(inv).eqv_spec(RationalModel::from_int_spec(1)));
                 assert(inv.mul_spec(self@).eqv_spec(RationalModel::from_int_spec(1)));
+
+                // Prove wf_spec of out.
+                RationalModel::lemma_denom_positive(self@);
+                RationalModel::lemma_denom_positive(inv);
+                let ghost sn = self.numerator.model@;
+                let ghost sd = self.denominator.model@;
+                let ghost rn = self@.num;
+                let ghost rd = self@.denom();
+                // sn != 0 (same sign as rn, from cross-mult with positive factors)
+                assert(sn != 0) by (nonlinear_arith)
+                    requires sn * rd == rn * (sd as int), rn != 0, rd > 0, sd > 0;
+                // denominator witness > 0 (abs of nonzero)
+                assert(out.denominator.model@ > 0);
+                // Determine witness values explicitly.
+                // new_num = from_sign_and_magnitude(sn < 0, sd_copy):
+                //   model@ = if sn < 0 then -(sd as int) else sd as int
+                let ghost nn = out.numerator.model@;
+                let ghost nd: nat = out.denominator.model@;
+                // new_den = abs(sn): model@ = |sn|
+                assert(nd == RuntimeBigIntWitness::abs_model_spec(sn));
+                // sn and rn have the same sign (from cross-mult with positive factors).
+                // sn and rn have the same sign (cross-mult with positive factors)
+                assert(sn > 0 ==> rn > 0) by (nonlinear_arith)
+                    requires sn * rd == rn * (sd as int), rd > 0, sd > 0;
+                assert(sn < 0 ==> rn < 0) by (nonlinear_arith)
+                    requires sn * rd == rn * (sd as int), rd > 0, sd > 0;
+                assert(rn > 0 ==> sn > 0) by (nonlinear_arith)
+                    requires sn * rd == rn * (sd as int), rd > 0, sd > 0;
+                assert(rn < 0 ==> sn < 0) by (nonlinear_arith)
+                    requires sn * rd == rn * (sd as int), rd > 0, sd > 0;
+                if rn > 0 {
+                    // reciprocal_spec positive branch
+                    assert(sn > 0);
+                    assert(nn == sd as int);
+                    assert(nd == sn as nat);
+                    let ghost nd_int: int = nd as int;
+                    assert(nd_int == sn);  // sn > 0 so (sn as nat) as int == sn
+                    assert(inv.num == rd);
+                    assert(inv.denom() == rn) by (nonlinear_arith)
+                        requires rn > 0, inv.den == (rn as nat - 1) as nat;
+                    // nn * inv.denom() = sd * rn
+                    // inv.num * nd_int = rd * sn
+                    // These are equal because sn * rd == rn * sd
+                    assert(nn * inv.denom() == inv.num * nd_int) by (nonlinear_arith)
+                        requires sn * rd == rn * (sd as int),
+                            nn == sd as int, nd_int == sn,
+                            inv.num == rd, inv.denom() == rn;
+                } else {
+                    assert(rn < 0);
+                    assert(sn < 0);
+                    // reciprocal_spec negative branch
+                    assert(nn == -(sd as int));
+                    assert(nd == (-sn) as nat);
+                    let ghost nd_int: int = nd as int;
+                    assert(nd_int == -sn);  // sn < 0 so ((-sn) as nat) as int == -sn
+                    assert(inv.num == -rd);
+                    assert(inv.denom() == -rn) by (nonlinear_arith)
+                        requires rn < 0, inv.den == ((-rn) as nat - 1) as nat;
+                    // nn * inv.denom() = (-sd) * (-rn) = sd * rn
+                    // inv.num * nd_int = (-rd) * (-sn) = rd * sn
+                    // These are equal because sn * rd == rn * sd
+                    assert(nn * inv.denom() == inv.num * nd_int) by (nonlinear_arith)
+                        requires sn * rd == rn * (sd as int),
+                            nn == -(sd as int), nd_int == -sn,
+                            inv.num == -rd, inv.denom() == -rn;
+                }
             }
             Option::Some(out)
         }
@@ -667,14 +936,14 @@ impl RuntimeRational {
 
     /// Division: (a/b) / (c/d) = (a*d) / (b*c).
     /// Requires the divisor is nonzero.
-    ///
-    /// Postcondition: `rhs * out` is equivalent to `self`.
     pub fn div(&self, rhs: &Self) -> (out: Self)
         requires
             self.wf_spec(),
             rhs.wf_spec(),
             !rhs@.eqv_spec(RationalModel::from_int_spec(0)),
         ensures
+            out@ == self@.div_spec(rhs@),
+            out.wf_spec(),
             rhs@.mul_spec(out@).eqv_spec(self@),
     {
         // Build reciprocal witnesses directly:
@@ -701,29 +970,28 @@ impl RuntimeRational {
             model: Ghost(self@.mul_spec(inv)),
         };
         proof {
-            // Goal: rhs@ * out@ ≡ self@
-            // where out@ = self@ * inv, and rhs@ * inv ≡ 1
+            // ── Part A: out@ == self@.div_spec(rhs@) ──
+            assert(inv == rhs@.reciprocal_spec());
+            assert(out@ == self@.mul_spec(inv));
+            assert(out@ == self@.div_spec(rhs@));
+
+            // ── Part B: rhs@ * out@ ≡ self@ ──
             let ghost one = RationalModel::from_int_spec(1);
             assert(rhs@.mul_spec(inv).eqv_spec(one));
-            assert(out@ == self@.mul_spec(inv));
 
-            // Step 1: rhs@ * (self@ * inv) == (self@ * inv) * rhs@  [commutativity, structural]
             RationalModel::lemma_mul_commutative(rhs@, self@.mul_spec(inv));
             let ghost lhs = rhs@.mul_spec(self@.mul_spec(inv));
             let ghost mid1 = self@.mul_spec(inv).mul_spec(rhs@);
             assert(lhs == mid1);
 
-            // Step 2: (self@ * inv) * rhs@ ≡ self@ * (inv * rhs@)  [associativity, eqv]
             RationalModel::lemma_mul_associative(self@, inv, rhs@);
             let ghost mid2 = self@.mul_spec(inv.mul_spec(rhs@));
             assert(mid1.eqv_spec(mid2));
 
-            // Step 3: inv * rhs@ == rhs@ * inv  [commutativity, structural]
             RationalModel::lemma_mul_commutative(inv, rhs@);
             assert(inv.mul_spec(rhs@) == rhs@.mul_spec(inv));
             assert(mid2 == self@.mul_spec(rhs@.mul_spec(inv)));
 
-            // Step 4: since rhs@*inv ≡ 1, self@*(rhs@*inv) ≡ self@*1  [congruence]
             RationalModel::lemma_eqv_mul_congruence_right(
                 self@,
                 rhs@.mul_spec(inv),
@@ -732,32 +1000,126 @@ impl RuntimeRational {
             let ghost mid3 = self@.mul_spec(one);
             assert(self@.mul_spec(rhs@.mul_spec(inv)).eqv_spec(mid3));
 
-            // Step 5: self@ * 1 ≡ self@  [identity]
             RationalModel::lemma_mul_one_identity(self@);
             assert(mid3.eqv_spec(self@));
 
-            // Chain via eqv transitivity:
-            // lhs == mid1 ≡ mid2 == self@*(rhs@*inv) ≡ mid3 ≡ self@
-
-            // mid1 ≡ mid2 (from step 2), so lhs ≡ mid2
             RationalModel::lemma_eqv_reflexive(lhs);
-            assert(lhs.eqv_spec(mid1));
             RationalModel::lemma_eqv_transitive(lhs, mid1, mid2);
-            assert(lhs.eqv_spec(mid2));
-
-            // mid2 == self@*(rhs@*inv) ≡ mid3
             assert(mid2 == self@.mul_spec(rhs@.mul_spec(inv)));
             assert(mid2.eqv_spec(mid3));
-
-            // lhs ≡ mid3
             RationalModel::lemma_eqv_transitive(lhs, mid2, mid3);
-            assert(lhs.eqv_spec(mid3));
-
-            // lhs ≡ self@
             RationalModel::lemma_eqv_transitive(lhs, mid3, self@);
-            assert(lhs.eqv_spec(self@));
-
             assert(rhs@.mul_spec(out@).eqv_spec(self@));
+
+            // ── Part C: out.wf_spec() ──
+            assert(out.numerator.wf_spec());
+            assert(out.denominator.wf_spec());
+
+            let ghost sn = self.numerator.model@;
+            let ghost sd = self.denominator.model@;
+            let ghost sa = self@.denom();
+            let ghost n1 = self@.num;
+            let ghost rn_i = rhs.numerator.model@;
+            let ghost rd = rhs.denominator.model@;
+            let ghost ra = rhs@.denom();
+            let ghost n2 = rhs@.num;
+
+            RationalModel::lemma_denom_positive(self@);
+            RationalModel::lemma_denom_positive(rhs@);
+
+            // rhs.numerator.model@ != 0 (from !rhs@.eqv_spec(0) and wf)
+            RationalModel::lemma_eqv_zero_iff_num_zero(rhs@);
+            assert(n2 != 0);
+            if rn_i == 0 {
+                assert((rn_i == 0) ==> rn_i * ra == 0) by (nonlinear_arith);
+                assert(n2 * (rd as int) == 0);
+                assert(((rd as int) > 0 && n2 * (rd as int) == 0) ==> n2 == 0)
+                    by (nonlinear_arith);
+                assert(false);
+            }
+            assert(rn_i != 0);
+
+            // Denominator > 0: self.den * |rhs.num| > 0
+            let ghost abs_rn = RuntimeBigIntWitness::abs_model_spec(rn_i);
+            assert(recip_den.model@ == abs_rn);
+            // abs_model_spec has a conditional that nonlinear_arith can't unfold.
+            // Case split to establish abs_rn > 0.
+            if rn_i > 0 {
+                assert(abs_rn == rn_i as nat);
+            } else {
+                assert(rn_i < 0);
+                assert(abs_rn == (-rn_i) as nat);
+            }
+            assert(abs_rn > 0);
+            Self::lemma_nat_product_positive(sd, abs_rn);
+            assert(out.denominator.model@ == sd * abs_rn);
+            assert(out.denominator.model@ > 0);
+
+            // Model denom product for self@ * inv
+            RationalModel::lemma_mul_denom_product_int(self@, inv);
+            assert(out@.denom() == sa * inv.denom());
+            assert(out@.num == n1 * inv.num);
+
+            // Witness values
+            let ghost rn_w = recip_num.model@;
+            let ghost rd_w = recip_den.model@;
+
+            assert(out.numerator.model@ == sn * rn_w);
+            assert((sd * rd_w) as int == (sd as int) * (rd_w as int)) by (nonlinear_arith);
+
+            // Prove: rn_w * inv.denom() == inv.num * (rd_w as int)
+            // from rhs.wf: rn_i * ra == n2 * (rd as int), by sign case analysis
+            if rn_i > 0 {
+                assert(!rhs_is_neg);
+                assert(rn_w == rd as int);
+                assert(rd_w == rn_i as nat);
+                assert((rn_i > 0 && ra > 0) ==> rn_i * ra > 0) by (nonlinear_arith);
+                assert(n2 * (rd as int) > 0);
+                assert(((rd as int) > 0 && n2 * (rd as int) > 0) ==> n2 > 0)
+                    by (nonlinear_arith);
+                assert(n2 > 0);
+                assert(inv.num == ra);
+                assert(inv.denom() == n2);
+                assert(rn_w * inv.denom() == inv.num * (rd_w as int)) by (nonlinear_arith)
+                    requires rn_i * ra == n2 * (rd as int),
+                        rn_w == rd as int,
+                        rd_w == rn_i as nat,
+                        inv.num == ra,
+                        inv.denom() == n2,
+                        rn_i > 0;
+            } else {
+                assert(rn_i < 0);
+                assert(rhs_is_neg);
+                assert(rn_w == -(rd as int));
+                assert(rd_w == (-rn_i) as nat);
+                assert((rn_i < 0 && ra > 0) ==> rn_i * ra < 0) by (nonlinear_arith);
+                assert(n2 * (rd as int) < 0);
+                assert(((rd as int) > 0 && n2 * (rd as int) < 0) ==> n2 < 0)
+                    by (nonlinear_arith);
+                assert(n2 < 0);
+                assert(inv.num == -ra);
+                assert(inv.denom() == -n2);
+                assert(rn_w * inv.denom() == inv.num * (rd_w as int)) by (nonlinear_arith)
+                    requires rn_i * ra == n2 * (rd as int),
+                        rn_w == -(rd as int),
+                        rd_w == (-rn_i) as nat,
+                        inv.num == -ra,
+                        inv.denom() == -n2,
+                        rn_i < 0;
+            }
+
+            // Combine via: sn*sa == n1*(sd as int) and rn_w*inv.denom() == inv.num*(rd_w as int)
+            assert(
+                (sn * rn_w) * (sa * inv.denom())
+                    == (n1 * inv.num) * ((sd as int) * (rd_w as int))
+            ) by (nonlinear_arith)
+                requires
+                    sn * sa == n1 * (sd as int),
+                    rn_w * inv.denom() == inv.num * (rd_w as int);
+
+            assert(out.numerator.model@ * out@.denom()
+                == out@.num * (out.denominator.model@ as int));
+            assert(out.wf_spec());
         }
         out
     }
@@ -906,6 +1268,192 @@ impl RuntimeRational {
                 == half@.num * (half.denominator.model@ as int));
         }
         sum.mul(&half)
+    }
+
+    /// Optional GCD normalization: returns an equivalent rational with
+    /// smaller numerator/denominator witnesses.
+    ///
+    /// This divides both the numerator and denominator witnesses by their
+    /// GCD.  Callers can invoke this periodically to keep witness sizes
+    /// manageable across chains of arithmetic operations.
+    pub fn normalize(&self) -> (out: Self)
+        requires
+            self.wf_spec(),
+        ensures
+            out.wf_spec(),
+            out@.eqv_spec(self@),
+    {
+        let abs_num = self.numerator.abs();
+        let abs_num_copy = abs_num.copy_small_total();
+        let den_copy = self.denominator.copy_small_total();
+
+        // Handle zero numerator: already normalized (den witness = 1 would
+        // be ideal, but the current form is valid; skip GCD).
+        let num_is_zero = abs_num.is_zero();
+        if num_is_zero {
+            let out = RuntimeRational {
+                numerator: self.numerator.copy_small_total(),
+                denominator: self.denominator.copy_small_total(),
+                model: Ghost(self@),
+            };
+            proof {
+                RationalModel::lemma_eqv_reflexive(self@);
+            }
+            return out;
+        }
+
+        proof {
+            // abs_num_copy > 0  (numerator is nonzero)
+            assert(abs_num_copy.model@ > 0) by {
+                assert(abs_num.model@
+                    == RuntimeBigIntWitness::abs_model_spec(self.numerator.model@));
+                assert(abs_num_copy.model@ == abs_num.model@);
+                // numerator.model@ != 0 (since is_zero returned false)
+                if self.numerator.model@ > 0 {
+                    assert(abs_num.model@ == self.numerator.model@ as nat);
+                } else {
+                    assert(self.numerator.model@ < 0);
+                    assert(abs_num.model@ == (-self.numerator.model@) as nat);
+                }
+            }
+        }
+
+        let g = gcd_bignat(abs_num_copy, den_copy);
+
+        // Divide witnesses by GCD.
+        let new_abs_num = abs_num.div(&g);
+        let new_den = self.denominator.div(&g);
+
+        // Rebuild signed numerator.
+        let is_neg = self.numerator.is_negative();
+        let new_num = if is_neg {
+            RuntimeBigIntWitness::from_unsigned(new_abs_num).neg()
+        } else {
+            RuntimeBigIntWitness::from_unsigned(new_abs_num)
+        };
+
+        // Ghost model: set model to match the new witnesses exactly.
+        let ghost g_val = g.model@;
+        let ghost new_sn: int = new_num.model@;
+        let ghost new_sd: nat = new_den.model@;
+
+        proof {
+            // ── Establish g divides |sn| and sd ──
+            let abs_sn: nat = RuntimeBigIntWitness::abs_model_spec(self.numerator.model@);
+            let sd: nat = self.denominator.model@;
+            assert(g_val == gcd_spec(abs_sn, sd)) by {
+                assert(abs_num_copy.model@ == abs_sn);
+                assert(den_copy.model@ == sd);
+            }
+
+            lemma_gcd_properties(abs_sn, sd);
+            assert(g_val > 0);
+            assert(abs_sn as int % g_val as int == 0);
+            assert(sd as int % g_val as int == 0);
+
+            // new_den > 0 (since sd > 0 and g divides sd, sd/g >= 1)
+            assert(new_sd == sd / g_val);
+            assert(new_sd > 0) by (nonlinear_arith)
+                requires sd > 0, g_val > 0, sd as int % g_val as int == 0,
+                         new_sd == sd / g_val;
+        }
+
+        let ghost new_model = RationalModel {
+            num: new_sn,
+            den: (new_sd - 1) as nat,
+        };
+
+        let out = RuntimeRational {
+            numerator: new_num,
+            denominator: new_den,
+            model: Ghost(new_model),
+        };
+
+        proof {
+            // ── wf_spec: new_sn * new_model.denom() == new_model.num * (new_sd as int) ──
+            // Both sides are new_sn * new_sd since model matches witnesses.
+            assert(new_model.denom() == new_sd as int);
+            assert(new_model.num == new_sn);
+            assert(new_sn * (new_sd as int) == new_sn * (new_sd as int));
+            assert(out.wf_spec());
+
+            // ── eqv_spec: self@.num * new_model.denom() == new_model.num * self@.denom() ──
+            // From old wf_spec: sn * d == n * sd  (where sn = self.numerator.model@,
+            //   sd = self.denominator.model@, n = self@.num, d = self@.denom())
+            // We have: sn = new_sn * g  (with sign), sd = new_sd * g
+            // So: (new_sn * g) * d == n * (new_sd * g)
+            // Cancel g: new_sn * d == n * new_sd
+            // Which is: new_model.num * self@.denom() == self@.num * new_model.denom()
+
+            let sn = self.numerator.model@;
+            let sd = self.denominator.model@ as int;
+            let n = self@.num;
+            let d = self@.denom();
+            let abs_sn: nat = RuntimeBigIntWitness::abs_model_spec(sn);
+
+            // Show: sn == new_sn * g  and  sd == new_sd * g
+            // new_abs_num = |sn| / g, new_den = sd / g
+            assert(new_abs_num.model@ == abs_sn / g_val);
+            assert(new_den.model@ == self.denominator.model@ / g_val);
+
+            // Sign analysis to establish sn == new_sn * (g_val as int)
+            if is_neg {
+                assert(sn < 0);
+                assert(abs_sn == (-sn) as nat);
+                assert(new_num.model@ == -(abs_sn / g_val) as int);
+                assert(new_sn == -(abs_sn / g_val) as int);
+                // sn == -(abs_sn as int) == -((abs_sn/g)*g + abs_sn%g)
+                // Since g | abs_sn: abs_sn%g == 0, so abs_sn == (abs_sn/g)*g
+                assert(abs_sn as int == (abs_sn / g_val) as int * g_val as int)
+                    by (nonlinear_arith)
+                    requires abs_sn as int % g_val as int == 0, g_val > 0;
+                assert(sn == new_sn * g_val as int) by (nonlinear_arith)
+                    requires
+                        sn < 0,
+                        abs_sn == (-sn) as nat,
+                        abs_sn as int == (abs_sn / g_val) as int * g_val as int,
+                        new_sn == -(abs_sn / g_val) as int;
+            } else {
+                assert(sn >= 0);
+                assert(abs_sn == sn as nat);
+                assert(new_num.model@ == (abs_sn / g_val) as int);
+                assert(new_sn == (abs_sn / g_val) as int);
+                assert(abs_sn as int == (abs_sn / g_val) as int * g_val as int)
+                    by (nonlinear_arith)
+                    requires abs_sn as int % g_val as int == 0, g_val > 0;
+                assert(sn == new_sn * g_val as int) by (nonlinear_arith)
+                    requires
+                        sn >= 0,
+                        abs_sn == sn as nat,
+                        abs_sn as int == (abs_sn / g_val) as int * g_val as int,
+                        new_sn == (abs_sn / g_val) as int;
+            }
+            assert(sn == new_sn * g_val as int);
+
+            // sd == new_sd * g
+            let sd_nat: nat = self.denominator.model@;
+            assert(sd_nat as int == (sd_nat / g_val) as int * g_val as int)
+                by (nonlinear_arith)
+                requires sd_nat as int % g_val as int == 0, g_val > 0;
+            assert(new_sd == sd_nat / g_val);
+            assert(sd == sd_nat as int);
+            assert(sd == (new_sd as int) * g_val as int);
+
+            // Cancel g from the wf cross-multiplication: sn * d == n * sd
+            // (new_sn * g) * d == n * (new_sd * g)
+            // new_sn * d == n * new_sd  (cancel g > 0)
+            RationalModel::lemma_denom_positive(self@);
+            assert(new_sn * d == n * (new_sd as int)) by (nonlinear_arith)
+                requires
+                    sn * d == n * sd,
+                    sn == new_sn * g_val as int,
+                    sd == (new_sd as int) * g_val as int,
+                    g_val > 0;
+
+            assert(n * new_model.denom() == new_model.num * d);
+            assert(out@.eqv_spec(self@));
+        }
+        out
     }
 }
 
