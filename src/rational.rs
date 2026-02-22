@@ -5113,6 +5113,1683 @@ impl Rational {
         // rhs ≡ lhs
         Self::lemma_eqv_symmetric(rhs, lhs);
     }
+
+    // ── Extended division / reciprocal (item 19) ──────────────────────
+
+    /// (a*b)⁻¹ ≡ a⁻¹ * b⁻¹ when a ≢ 0 and b ≢ 0.
+    pub proof fn lemma_reciprocal_of_product(a: Self, b: Self)
+        requires
+            !a.eqv_spec(Self::from_int_spec(0)),
+            !b.eqv_spec(Self::from_int_spec(0)),
+        ensures
+            a.mul_spec(b).reciprocal_spec().eqv_spec(
+                a.reciprocal_spec().mul_spec(b.reciprocal_spec())),
+    {
+        Self::lemma_eqv_zero_iff_num_zero(a);
+        Self::lemma_eqv_zero_iff_num_zero(b);
+        let ab = a.mul_spec(b);
+        assert(ab.num == a.num * b.num);
+        assert(ab.num != 0) by (nonlinear_arith)
+            requires a.num != 0, b.num != 0, ab.num == a.num * b.num;
+        // Get inverses
+        let inv_a = Self::lemma_reciprocal_spec_inverse(a);
+        let inv_b = Self::lemma_reciprocal_spec_inverse(b);
+        let inv_ab = Self::lemma_reciprocal_spec_inverse(ab);
+        // inv_ab is the unique inverse of ab (up to eqv)
+        // inv_a * inv_b is also an inverse of ab:
+        // ab * (inv_a * inv_b) = a * b * inv_a * inv_b
+        //                      = (a * inv_a) * (b * inv_b)  by assoc+commut
+        //                      ≡ 1 * 1 = 1
+        let prod = inv_a.mul_spec(inv_b);
+        let one = Self::from_int_spec(1);
+        // a * (b * (inv_a * inv_b)):
+        // = a * ((b * inv_a) * inv_b) -- but we want a*inv_a first
+        // Rearrange: ab * prod = (a * b) * (inv_a * inv_b)
+        //   ≡ a * (b * (inv_a * inv_b))  by assoc
+        Self::lemma_mul_associative(a, b, prod);
+        //   b * (inv_a * inv_b) ≡ (b * inv_a) * inv_b by assoc
+        //   but b*inv_a = inv_a*b by commut
+        //   inv_a * b * inv_b ≡ inv_a * (b * inv_b) by assoc
+        Self::lemma_mul_commutative(b, inv_a);
+        Self::lemma_mul_commutative(b, prod);
+        // b * prod = b * (inv_a * inv_b)
+        // inv_a * b = b * inv_a structurally (by lemma_mul_commutative)
+        // Actually let me use a cleaner approach:
+        // (a*b) * (inv_a * inv_b)
+        // ≡ a * (b * (inv_a * inv_b))     by assoc
+        // ≡ a * (b * inv_a * inv_b)        by assoc on inner (backward)
+        // But I need: a * ((inv_a) * (b * inv_b))
+        // via commutativity and associativity
+        // Let's do: b * (inv_a * inv_b) ≡ inv_a * (b * inv_b)
+        Self::lemma_mul_associative(inv_a, b, inv_b);
+        // inv_a * b * inv_b ≡ inv_a * (b * inv_b)
+        Self::lemma_mul_commutative(inv_a, b);
+        // inv_a * b == b * inv_a structurally
+        // so b * inv_a * inv_b ≡ inv_a * (b * inv_b)
+        // but we need b * (inv_a * inv_b) first
+        Self::lemma_mul_associative(b, inv_a, inv_b);
+        // b * inv_a * inv_b ≡ b * (inv_a * inv_b)
+        Self::lemma_eqv_symmetric(b.mul_spec(inv_a).mul_spec(inv_b), b.mul_spec(inv_a.mul_spec(inv_b)));
+        // So b * (inv_a * inv_b) ≡ b * inv_a * inv_b
+        //                        = (inv_a * b) * inv_b  structurally (commut)
+        //                        ≡ inv_a * (b * inv_b)  by assoc
+        assert(b.mul_spec(inv_a) == inv_a.mul_spec(b));
+        Self::lemma_eqv_transitive(
+            b.mul_spec(inv_a.mul_spec(inv_b)),
+            b.mul_spec(inv_a).mul_spec(inv_b),
+            inv_a.mul_spec(b.mul_spec(inv_b)),
+        );
+        // b * inv_b ≡ 1
+        // so inv_a * (b * inv_b) ≡ inv_a * 1
+        Self::lemma_eqv_mul_congruence_right(inv_a, b.mul_spec(inv_b), one);
+        Self::lemma_mul_one_identity(inv_a);
+        // inv_a * 1 == inv_a structurally
+        Self::lemma_eqv_transitive(
+            b.mul_spec(inv_a.mul_spec(inv_b)),
+            inv_a.mul_spec(b.mul_spec(inv_b)),
+            inv_a.mul_spec(one),
+        );
+        // inv_a 1 == inv_a
+        Self::lemma_eqv_transitive(
+            b.mul_spec(inv_a.mul_spec(inv_b)),
+            inv_a.mul_spec(one),
+            inv_a,
+        );
+        // So b * prod ≡ inv_a
+        // a * (b * prod) ≡ a * inv_a ≡ 1
+        Self::lemma_eqv_mul_congruence_right(a, b.mul_spec(prod), inv_a);
+        Self::lemma_eqv_transitive(
+            a.mul_spec(b.mul_spec(prod)),
+            a.mul_spec(inv_a),
+            one,
+        );
+        // a * (b * prod) ≡ 1
+        // And (a*b) * prod ≡ a * (b * prod) by assoc
+        Self::lemma_eqv_transitive(
+            ab.mul_spec(prod),
+            a.mul_spec(b.mul_spec(prod)),
+            one,
+        );
+        // So ab * prod ≡ 1 and ab * inv_ab ≡ 1
+        // Therefore prod ≡ inv_ab by cancellation
+        Self::lemma_mul_cancel_left(prod, inv_ab, ab);
+        Self::lemma_eqv_symmetric(prod, inv_ab);
+    }
+
+    /// b ≢ 0 → (a/b) * c ≡ (a*c) / b.
+    pub proof fn lemma_div_mul_assoc(a: Self, b: Self, c: Self)
+        requires
+            !b.eqv_spec(Self::from_int_spec(0)),
+        ensures
+            a.div_spec(b).mul_spec(c).eqv_spec(
+                a.mul_spec(c).div_spec(b)),
+    {
+        Self::lemma_eqv_zero_iff_num_zero(b);
+        let inv = Self::lemma_reciprocal_spec_inverse(b);
+        // a/b = a * inv, so (a/b)*c = (a*inv)*c
+        // (a*c)/b = (a*c)*inv
+        // Need: (a*inv)*c ≡ (a*c)*inv
+        // By associativity: (a*inv)*c ≡ a*(inv*c)
+        Self::lemma_mul_associative(a, inv, c);
+        // inv*c == c*inv structurally
+        Self::lemma_mul_commutative(inv, c);
+        // a*(inv*c) == a*(c*inv) structurally
+        // a*(c*inv) ≡ (a*c)*inv by associativity (backward)
+        Self::lemma_mul_associative(a, c, inv);
+        Self::lemma_eqv_symmetric(a.mul_spec(c).mul_spec(inv), a.mul_spec(c.mul_spec(inv)));
+        // Chain: (a*inv)*c ≡ a*(inv*c) = a*(c*inv) ≡ (a*c)*inv
+        assert(a.mul_spec(inv.mul_spec(c)) == a.mul_spec(c.mul_spec(inv)));
+        Self::lemma_eqv_transitive(
+            a.mul_spec(inv).mul_spec(c),
+            a.mul_spec(inv.mul_spec(c)),
+            a.mul_spec(c).mul_spec(inv),
+        );
+    }
+
+    /// a ≤ b ∧ c < 0 → b/c ≤ a/c (order reversal).
+    pub proof fn lemma_div_neg_denominator(a: Self, b: Self, c: Self)
+        requires
+            a.le_spec(b),
+            c.lt_spec(Self::from_int_spec(0)),
+        ensures
+            b.div_spec(c).le_spec(a.div_spec(c)),
+    {
+        let z = Self::from_int_spec(0);
+        Self::lemma_denom_positive(c);
+        Self::lemma_eqv_zero_iff_num_zero(c);
+        assert(z.num == 0);
+        assert(z.denom() == 1);
+        assert(c.num < 0) by (nonlinear_arith)
+            requires c.lt_spec(z), z.num == 0, z.denom() == 1;
+        let inv = Self::lemma_reciprocal_spec_inverse(c);
+        // c < 0 means inv < 0 (since c * inv ≡ 1 > 0, and c < 0, inv must be < 0)
+        // Prove inv.num < 0 from the reciprocal_spec definition
+        // c.num < 0, so reciprocal_spec goes to the else-if branch:
+        // inv = Rational { num: -c.denom(), den: ((-c.num) as nat - 1) as nat }
+        // c.denom() > 0 so -c.denom() < 0, so inv.num < 0
+        assert(inv.num == -c.denom());
+        assert(inv.num < 0) by (nonlinear_arith)
+            requires c.denom() > 0, inv.num == -c.denom();
+        Self::lemma_denom_positive(inv);
+        // Now: a ≤ b and inv < 0 (inv.num < 0, inv.denom() > 0)
+        // We want: b*inv ≤ a*inv (multiplication by negative reverses order)
+        // a ≤ b means a.num * b.denom() ≤ b.num * a.denom()
+        // Need: (b*inv).num * (a*inv).denom() ≤ (a*inv).num * (b*inv).denom()
+        // = (b.num * inv.num) * (a.denom() * inv.denom())
+        //   ≤ (a.num * inv.num) * (b.denom() * inv.denom())
+        Self::lemma_mul_denom_product_int(a, inv);
+        Self::lemma_mul_denom_product_int(b, inv);
+        assert(a.mul_spec(inv).num == a.num * inv.num);
+        assert(b.mul_spec(inv).num == b.num * inv.num);
+        assert(a.mul_spec(inv).denom() == a.denom() * inv.denom());
+        assert(b.mul_spec(inv).denom() == b.denom() * inv.denom());
+        // Use ghost vars so nonlinear_arith can reason with simple names
+        let ghost an = a.num;
+        let ghost bn = b.num;
+        let ghost ad = a.denom();
+        let ghost bd = b.denom();
+        let ghost in_ = inv.num;
+        let ghost id = inv.denom();
+        // a ≤ b: an * bd ≤ bn * ad
+        assert(an * bd <= bn * ad);
+        // Multiply both sides by in_ * id (negative * positive = negative),
+        // inequality reverses:
+        // (bn * in_) * (ad * id) ≤ (an * in_) * (bd * id)
+        assert((an * bd <= bn * ad && in_ < 0 && id > 0) ==>
+            (bn * in_) * (ad * id) <= (an * in_) * (bd * id))
+            by (nonlinear_arith);
+    }
+
+    // ── 2×2 determinant & Cramer's rule (item 20) ────────────────────
+
+    /// det2(a, b, c, d) = a*d - b*c.
+    pub open spec fn det2_spec(a: Self, b: Self, c: Self, d: Self) -> Self {
+        a.mul_spec(d).sub_spec(b.mul_spec(c))
+    }
+
+    /// Swapping rows negates the determinant.
+    pub proof fn lemma_det2_antisymmetric(a: Self, b: Self, c: Self, d: Self)
+        ensures
+            Self::det2_spec(c, d, a, b).eqv_spec(
+                Self::det2_spec(a, b, c, d).neg_spec()),
+    {
+        // det2(c,d,a,b) = c*b - d*a
+        // det2(a,b,c,d) = a*d - b*c
+        // -(a*d - b*c) = b*c - a*d
+        // Need: c*b - d*a ≡ b*c - a*d
+        let cb = c.mul_spec(b);
+        let da = d.mul_spec(a);
+        let ad = a.mul_spec(d);
+        let bc = b.mul_spec(c);
+        Self::lemma_mul_commutative(c, b);
+        assert(cb == bc);
+        Self::lemma_mul_commutative(d, a);
+        assert(da == ad);
+        // det2(c,d,a,b) = cb - da = bc - ad
+        // -(det2(a,b,c,d)) = -(ad - bc) = bc - ad  by neg_sub
+        Self::lemma_neg_sub(ad, bc);
+        // ad.sub_spec(bc).neg_spec() == bc.sub_spec(ad)
+        Self::lemma_eqv_reflexive(bc.sub_spec(ad));
+    }
+
+    /// det2 ≡ 0 ↔ a*d ≡ b*c (collinearity).
+    pub proof fn lemma_det2_zero_iff_proportional(a: Self, b: Self, c: Self, d: Self)
+        ensures
+            Self::det2_spec(a, b, c, d).eqv_spec(Self::from_int_spec(0))
+            == a.mul_spec(d).eqv_spec(b.mul_spec(c)),
+    {
+        Self::lemma_sub_eqv_zero_iff_eqv(a.mul_spec(d), b.mul_spec(c));
+    }
+
+    /// Cramer's rule: when det ≢ 0, the solution
+    /// x = (d*e - b*f)/det, y = (a*f - c*e)/det
+    /// satisfies a*x + b*y ≡ e and c*x + d*y ≡ f.
+    pub proof fn lemma_cramer2_satisfies(
+        a: Self, b: Self, c: Self, d: Self, e: Self, f: Self,
+    )
+        requires
+            !Self::det2_spec(a, b, c, d).eqv_spec(Self::from_int_spec(0)),
+        ensures ({
+            let det = Self::det2_spec(a, b, c, d);
+            let x = d.mul_spec(e).sub_spec(b.mul_spec(f)).div_spec(det);
+            let y = a.mul_spec(f).sub_spec(c.mul_spec(e)).div_spec(det);
+            a.mul_spec(x).add_spec(b.mul_spec(y)).eqv_spec(e)
+            && c.mul_spec(x).add_spec(d.mul_spec(y)).eqv_spec(f)
+        }),
+    {
+        let det = Self::det2_spec(a, b, c, d);
+        let num_x = d.mul_spec(e).sub_spec(b.mul_spec(f));
+        let num_y = a.mul_spec(f).sub_spec(c.mul_spec(e));
+        let x = num_x.div_spec(det);
+        let y = num_y.div_spec(det);
+
+        Self::lemma_eqv_zero_iff_num_zero(det);
+
+        // x = num_x / det, so det * x ≡ num_x
+        Self::lemma_div_cancel(det, num_x);
+        // det * x ≡ num_x = d*e - b*f
+
+        // y = num_y / det, so det * y ≡ num_y
+        Self::lemma_div_cancel(det, num_y);
+        // det * y ≡ num_y = a*f - c*e
+
+        // We need: a*x + b*y ≡ e
+        // Multiply both sides by det: det*(a*x + b*y) ≡ det*e
+        // det*(a*x + b*y) ≡ det*a*x + det*b*y
+        //                  ≡ a*(det*x) + b*(det*y)
+        //                  ≡ a*num_x + b*num_y
+        //                  = a*(d*e - b*f) + b*(a*f - c*e)
+        //                  = a*d*e - a*b*f + a*b*f - b*c*e
+        //                  = a*d*e - b*c*e
+        //                  = (a*d - b*c)*e
+        //                  = det * e
+        // So det*(a*x + b*y) ≡ det*e, cancel det to get a*x + b*y ≡ e.
+
+        // a*x: a * (num_x / det) = a * (num_x * inv_det)
+        //    ≡ (a * num_x) / det  by div_mul_assoc (reversed)
+        Self::lemma_div_mul_assoc(num_x, det, a);
+        Self::lemma_mul_commutative(x, a);
+        // x * a = a * x structurally... no, x = num_x.div_spec(det) = num_x.mul_spec(inv)
+        // a.mul_spec(x) vs num_x.div_spec(det).mul_spec(a)... hmm
+
+        // Let me use a different approach: show det * (a*x + b*y) ≡ det * e
+        // then cancel.
+
+        // det * (a*x + b*y) ≡ det*a*x + det*b*y  by distributive
+        let ax = a.mul_spec(x);
+        let by_ = b.mul_spec(y);
+        let sum = ax.add_spec(by_);
+        Self::lemma_eqv_mul_distributive_left(det, ax, by_);
+        // det*ax ≡ a*(det*x) by commut+assoc
+        Self::lemma_mul_commutative(det, ax);
+        Self::lemma_mul_commutative(det, a);
+        // det*a = a*det structurally. det*ax = ax*det = (a*x)*det
+        // (a*x)*det ≡ a*(x*det) by assoc
+        Self::lemma_mul_associative(a, x, det);
+        Self::lemma_mul_commutative(x, det);
+        // x*det == det*x structurally
+        // a*(x*det) = a*(det*x) structurally
+        // det*x ≡ num_x (from div_cancel: det * (num_x/det) ≡ num_x)
+        // So a*(det*x) ≡ a*num_x
+        Self::lemma_eqv_mul_congruence_right(
+            a, det.mul_spec(x), num_x,
+        );
+        // Chain: det*ax = ax*det ≡ a*(x*det) = a*(det*x) ≡ a*num_x
+        assert(ax.mul_spec(det) == det.mul_spec(ax));
+        Self::lemma_eqv_transitive(
+            det.mul_spec(ax),
+            a.mul_spec(x.mul_spec(det)),
+            a.mul_spec(num_x),
+        );
+
+        // Similarly for det*by ≡ b*num_y
+        Self::lemma_mul_associative(b, y, det);
+        Self::lemma_mul_commutative(y, det);
+        Self::lemma_eqv_mul_congruence_right(
+            b, det.mul_spec(y), num_y,
+        );
+        assert(by_.mul_spec(det) == det.mul_spec(by_));
+        Self::lemma_eqv_transitive(
+            det.mul_spec(by_),
+            b.mul_spec(y.mul_spec(det)),
+            b.mul_spec(num_y),
+        );
+
+        // det*(ax+by) ≡ det*ax + det*by ≡ a*num_x + b*num_y
+        Self::lemma_eqv_add_congruence(
+            det.mul_spec(ax), a.mul_spec(num_x),
+            det.mul_spec(by_), b.mul_spec(num_y),
+        );
+        Self::lemma_eqv_transitive(
+            det.mul_spec(sum),
+            det.mul_spec(ax).add_spec(det.mul_spec(by_)),
+            a.mul_spec(num_x).add_spec(b.mul_spec(num_y)),
+        );
+
+        // a*num_x + b*num_y = a*(d*e - b*f) + b*(a*f - c*e)
+        // Expand a*(d*e - b*f):
+        Self::lemma_sub_mul_right(d.mul_spec(e), b.mul_spec(f), a);
+        // = a*d*e - a*b*f  (eqv)
+        // Expand b*(a*f - c*e):
+        Self::lemma_sub_mul_right(a.mul_spec(f), c.mul_spec(e), b);
+        // = b*a*f - b*c*e  (eqv)
+
+        // Strategy: show det*(ax+by) ≡ a*num_x + b*num_y ≡ det*e, then cancel det.
+        // a * num_x = num_x * a (by commut)
+        Self::lemma_mul_commutative(a, num_x);
+        // num_x * a ≡ de*a - bf*a (by sub_mul_right)
+        let de = d.mul_spec(e);
+        let bf = b.mul_spec(f);
+        // sub_mul_right(de, bf, a): (de - bf) * a ≡ de*a - bf*a
+        // But we also need: de*a ≡ a*d*e etc. This telescopes into many assoc/commut steps.
+
+        // This proof is getting extremely long. Let me use a much simpler approach:
+        // prove it directly at the numerator/denominator cross-multiplication level.
+        // This avoids all the algebraic manipulation.
+
+        // SIMPLIFIED APPROACH: prove eqv directly via cross-multiplication.
+        // For a*x + b*y ≡ e, we check:
+        // (a*x + b*y).num * e.denom() == e.num * (a*x + b*y).denom()
+        // This is tedious but mechanical and avoids the algebraic chain.
+
+        // Even simpler: just use the fact that det*(a*x + b*y) ≡ det*e,
+        // where det*e = (ad-bc)*e.
+        // Since we've shown det*(ax+by) ≡ a*num_x + b*num_y above,
+        // we need a*num_x + b*num_y ≡ det*e.
+        // This is an algebraic identity that we can verify at the num level.
+
+        // Actually the cleanest: note that a*(de-bf) + b*(af-ce) = ade-abf+baf-bce = ade-bce = (ad-bc)e = det*e.
+        // All these are eqv (not ==), so we need the chain.
+
+        // Let me try yet another approach: prove it for the FIRST equation only using a helper,
+        // and note the second is symmetric.
+
+        // FINAL APPROACH: Use the identity directly.
+        // We want: a*x + b*y ≡ e where x = num_x/det, y = num_y/det.
+        // Equivalently: (a*num_x + b*num_y)/det ≡ e.
+        // (a*num_x + b*num_y) = a*(de-bf) + b*(af-ce)
+        // We'll prove a*(de-bf) + b*(af-ce) ≡ det*e
+        // then use div_cancel to conclude (det*e)/det ≡ e.
+
+        // Let me use div_add_numerator: (a*num_x + b*num_y)/det = a*num_x/det + b*num_y/det
+        Self::lemma_div_add_numerator(a.mul_spec(num_x), b.mul_spec(num_y), det);
+        // a*num_x/det ≡ a*(num_x/det) = a*x  by div_mul_assoc
+        Self::lemma_div_mul_assoc(num_x, det, a);
+        // (num_x/det)*a ≡ (num_x*a)/det
+        Self::lemma_mul_commutative(x, a);
+        // a*x = x*a = (num_x*inv)*a, and (num_x/det)*a = x*a structurally
+        // Similarly: b*num_y/det ≡ b*y by div_mul_assoc
+        Self::lemma_div_mul_assoc(num_y, det, b);
+        Self::lemma_mul_commutative(y, b);
+
+        // So (a*num_x + b*num_y)/det ≡ a*x + b*y
+        // And if a*num_x + b*num_y ≡ det*e, then (det*e)/det ≡ e by div_mul_cancel
+        Self::lemma_div_mul_cancel(e, det);
+        // (e*det)/det ≡ e
+        Self::lemma_mul_commutative(e, det);
+        // e*det = det*e structurally
+
+        // Now prove: a*num_x + b*num_y ≡ det*e
+        // a*(de-bf) + b*(af-ce) ≡ (ad-bc)*e
+        // Expand using sub_mul_right:
+        // (de-bf)*a ≡ de*a - bf*a
+        Self::lemma_sub_mul_right(de, bf, a);
+        // (af-ce)*b ≡ af*b - ce*b
+        let af = a.mul_spec(f);
+        let ce = c.mul_spec(e);
+        Self::lemma_sub_mul_right(af, ce, b);
+
+        // Now: num_x*a + num_y*b ≡ (de*a - bf*a) + (af*b - ce*b)
+        // We need a*num_x + b*num_y, but by commut:
+        assert(a.mul_spec(num_x) == num_x.mul_spec(a));
+        assert(b.mul_spec(num_y) == num_y.mul_spec(b));
+        Self::lemma_eqv_add_congruence(
+            num_x.mul_spec(a), de.mul_spec(a).sub_spec(bf.mul_spec(a)),
+            num_y.mul_spec(b), af.mul_spec(b).sub_spec(ce.mul_spec(b)),
+        );
+        // = (de*a - bf*a) + (af*b - ce*b)
+        // Use sub_add_distributes: (X-Y) + (Z-W) ≡ (X+Z) - (Y+W)... wait that's not right.
+        // Actually sub_add_distributes is: (a+b) - (c+d) ≡ (a-c) + (b-d)
+        // We need: (de*a - bf*a) + (af*b - ce*b)
+        // ≡ (de*a + af*b) - (bf*a + ce*b)  ... need to prove this
+
+        // This is getting extremely long. Let me take a completely different tack and
+        // prove it at the raw numerator level with nonlinear_arith.
+
+        // Actually, for a complex theorem like Cramer's rule, the most reliable approach
+        // in Verus is to unfold everything to numerators and use nonlinear_arith.
+        // Let me abandon the algebraic approach and do this directly.
+
+        // I'll assert the final result and let the SMT solver handle it with enough hints.
+        // The key insight: a*x + b*y ≡ e means
+        // (a*x + b*y).num * e.denom() == e.num * (a*x + b*y).denom()
+
+        // But even this would be incredibly complex at the numerator level because of
+        // the chain of additions and multiplications.
+
+        // PRAGMATIC APPROACH: Accept that Cramer's rule is too complex for a single proof
+        // and instead just prove the identity a*(de-bf) + b*(af-ce) ≡ (ad-bc)*e
+        // using the sub_add_distributes + cancellation lemmas we already have.
+
+        // Actually I realize I'm overcomplicating this. Let me use:
+        // 1. det * (a*x + b*y) ≡ a*(det*x) + b*(det*y) ≡ a*num_x + b*num_y
+        // 2. a*num_x + b*num_y ≡ det*e (algebraic identity)
+        // 3. So det*(a*x + b*y) ≡ det*e, cancel det.
+
+        // For step 2, use sub_mul_right and cancellation.
+        // I've already started this. Let me continue more carefully.
+
+        // After sub_mul_right:
+        // num_x*a ≡ de*a - bf*a
+        // num_y*b ≡ af*b - ce*b
+        // We need their sum ≡ det*e
+
+        // de*a = d*e*a, bf*a = b*f*a, af*b = a*f*b, ce*b = c*e*b
+        // By mul commutative/associative:
+        // de*a ≡ a*d*e = (a*d)*e ≡ ad*e  (where ad = a*d = a.mul_spec(d))
+        // bf*a ≡ a*b*f   ... hmm not bf*a but b*f then *a
+
+        // I think the cleanest approach for Cramer's is to defer to a numerator-level proof.
+        // But that would be enormous. Let me try a simpler ensures instead:
+        // just verify it as an opaque identity. Actually no, I want it verified.
+
+        // OK let me commit to the algebraic approach step by step.
+
+        // I proved: det*(ax+by) ≡ a*num_x + b*num_y
+        //                        = a*(de-bf) + b*(af-ce)
+        // Need: ≡ det*e = (ad-bc)*e
+
+        // a*(de-bf) + b*(af-ce)
+        // Expand using sub_mul_right (already called):
+        // ≡ (de*a - bf*a) + (af*b - ce*b)
+
+        // Now use commutative to rewrite:
+        // de*a: (d*e)*a ≡ d*(e*a) by assoc, e*a = a*e by commut, so d*(a*e) ≡ (d*a)*e by assoc back
+        //       d*a = a*d by commut. So de*a ≡ ad*e.
+        // bf*a: (b*f)*a ≡ b*(f*a) by assoc, f*a = a*f by commut, so b*(a*f) ≡ (b*a)*f = (a*b)*f by commut
+        //       So bf*a ≡ ab*f = a*b*f. Hmm we need bf*a ≡ af*b? Let me check:
+        //       bf*a = b*f*a, af*b = a*f*b. By commut: b*f*a = a*b*f (via commut+assoc), a*f*b = a*b*f similarly.
+        //       So bf*a ≡ af*b.
+        // af*b: same
+        // ce*b: (c*e)*b ≡ c*(e*b) = c*(b*e) ≡ (c*b)*e = (b*c)*e by commut
+
+        // So: (ad*e - af*b) + (af*b - bc*e)
+        //   = ad*e - af*b + af*b - bc*e
+        //   ≡ ad*e - bc*e  (after af*b cancels)
+        //   ≡ (ad - bc)*e  by sub_mul_right backward
+        //   = det*e  ✓
+
+        // This requires showing bf*a ≡ af*b and the cancellation.
+        // Since this is extremely involved, let me break it down:
+
+        // Step A: de*a ≡ ad*e
+        let ad = a.mul_spec(d);
+        let bc_ = b.mul_spec(c);
+        Self::lemma_mul_associative(d, e, a);
+        // de*a ≡ d*(e*a)
+        Self::lemma_mul_commutative(e, a);
+        // e*a == a*e structurally
+        // d*(a*e) ≡ (d*a)*e by assoc backward
+        Self::lemma_mul_associative(d, a, e);
+        Self::lemma_eqv_symmetric(d.mul_spec(a).mul_spec(e), d.mul_spec(a.mul_spec(e)));
+        Self::lemma_mul_commutative(d, a);
+        assert(d.mul_spec(a) == ad);
+        // de*a ≡ d*(e*a) = d*(a*e) ≡ (d*a)*e = ad*e
+        Self::lemma_eqv_transitive(
+            de.mul_spec(a), d.mul_spec(e.mul_spec(a)), d.mul_spec(a.mul_spec(e)),
+        );
+        Self::lemma_eqv_transitive(
+            de.mul_spec(a), d.mul_spec(a.mul_spec(e)), ad.mul_spec(e),
+        );
+
+        // Step B: bf*a ≡ af*b (these cancel)
+        // bf*a = (b*f)*a ≡ b*(f*a) by assoc
+        Self::lemma_mul_associative(b, f, a);
+        // f*a == a*f structurally by commut
+        Self::lemma_mul_commutative(f, a);
+        // So b*(f*a) == b*(a*f) structurally, i.e. bf*a ≡ b*(a*f)
+        // b*(a*f) ≡ (b*a)*f by assoc (backward)
+        Self::lemma_mul_associative(b, a, f);
+        Self::lemma_eqv_symmetric(b.mul_spec(a).mul_spec(f), b.mul_spec(a.mul_spec(f)));
+        // Chain: bf*a ≡ b*(a*f) ≡ (b*a)*f
+        Self::lemma_eqv_transitive(
+            bf.mul_spec(a), b.mul_spec(a.mul_spec(f)), b.mul_spec(a).mul_spec(f),
+        );
+        // af*b = (a*f)*b ≡ a*(f*b) by assoc
+        Self::lemma_mul_associative(a, f, b);
+        // f*b == b*f structurally by commut
+        Self::lemma_mul_commutative(f, b);
+        // a*(f*b) == a*(b*f) structurally
+        // a*(b*f) ≡ (a*b)*f by assoc (backward)
+        Self::lemma_mul_associative(a, b, f);
+        Self::lemma_eqv_symmetric(a.mul_spec(b).mul_spec(f), a.mul_spec(b.mul_spec(f)));
+        // Chain: af*b ≡ a*(b*f) ≡ (a*b)*f
+        Self::lemma_eqv_transitive(
+            af.mul_spec(b), a.mul_spec(b.mul_spec(f)), a.mul_spec(b).mul_spec(f),
+        );
+        // (b*a)*f == (a*b)*f since b*a == a*b structurally
+        Self::lemma_mul_commutative(b, a);
+        assert(b.mul_spec(a) == a.mul_spec(b));
+        // bf*a ≡ (a*b)*f and af*b ≡ (a*b)*f, so bf*a ≡ af*b
+        Self::lemma_eqv_symmetric(af.mul_spec(b), a.mul_spec(b).mul_spec(f));
+        Self::lemma_eqv_transitive(bf.mul_spec(a), a.mul_spec(b).mul_spec(f), af.mul_spec(b));
+
+        // Step C: ce*b ≡ bc*e
+        Self::lemma_mul_associative(c, e, b);
+        Self::lemma_mul_commutative(e, b);
+        Self::lemma_mul_associative(c, b, e);
+        Self::lemma_eqv_symmetric(c.mul_spec(b).mul_spec(e), c.mul_spec(b.mul_spec(e)));
+        Self::lemma_mul_commutative(c, b);
+        assert(c.mul_spec(b) == bc_);
+        Self::lemma_eqv_transitive(
+            ce.mul_spec(b), c.mul_spec(e.mul_spec(b)), c.mul_spec(b.mul_spec(e)),
+        );
+        Self::lemma_eqv_transitive(
+            ce.mul_spec(b), c.mul_spec(b.mul_spec(e)), bc_.mul_spec(e),
+        );
+
+        // Step D: (de*a - bf*a) + (af*b - ce*b) ≡ (ad*e - af*b) + (af*b - bc*e)
+        // de*a ≡ ad*e, bf*a ≡ af*b → de*a - bf*a ≡ ad*e - af*b
+        Self::lemma_eqv_sub_congruence(de.mul_spec(a), ad.mul_spec(e), bf.mul_spec(a), af.mul_spec(b));
+        // af*b ≡ af*b (refl), ce*b ≡ bc*e → af*b - ce*b ≡ af*b - bc*e
+        Self::lemma_eqv_reflexive(af.mul_spec(b));
+        Self::lemma_eqv_sub_congruence(af.mul_spec(b), af.mul_spec(b), ce.mul_spec(b), bc_.mul_spec(e));
+        // Sum: ≡ (ad*e - af*b) + (af*b - bc*e)
+        Self::lemma_eqv_add_congruence(
+            de.mul_spec(a).sub_spec(bf.mul_spec(a)),
+            ad.mul_spec(e).sub_spec(af.mul_spec(b)),
+            af.mul_spec(b).sub_spec(ce.mul_spec(b)),
+            af.mul_spec(b).sub_spec(bc_.mul_spec(e)),
+        );
+
+        // Step E: (ad*e - af*b) + (af*b - bc*e) ≡ ad*e - bc*e
+        // This is X - Y + Y - Z ≡ X - Z
+        // Use: (X-Y)+(Y-Z) ≡ X-Z by eqv_sub_chain
+        Self::lemma_eqv_sub_chain(ad.mul_spec(e), af.mul_spec(b), bc_.mul_spec(e));
+
+        // Step F: ad*e - bc*e ≡ (ad - bc)*e = det*e
+        // (ad - bc)*e ≡ ad*e - bc*e  by sub_mul_right
+        Self::lemma_sub_mul_right(ad, bc_, e);
+        Self::lemma_eqv_symmetric(ad.mul_spec(e).sub_spec(bc_.mul_spec(e)), det.mul_spec(e));
+
+        // Combine D+E+F: (de*a - bf*a) + (af*b - ce*b) ≡ det*e
+        Self::lemma_eqv_transitive(
+            de.mul_spec(a).sub_spec(bf.mul_spec(a)).add_spec(
+                af.mul_spec(b).sub_spec(ce.mul_spec(b))),
+            ad.mul_spec(e).sub_spec(af.mul_spec(b)).add_spec(
+                af.mul_spec(b).sub_spec(bc_.mul_spec(e))),
+            ad.mul_spec(e).sub_spec(bc_.mul_spec(e)),
+        );
+        Self::lemma_eqv_transitive(
+            de.mul_spec(a).sub_spec(bf.mul_spec(a)).add_spec(
+                af.mul_spec(b).sub_spec(ce.mul_spec(b))),
+            ad.mul_spec(e).sub_spec(bc_.mul_spec(e)),
+            det.mul_spec(e),
+        );
+
+        // From sub_mul_right earlier:
+        // num_x*a ≡ de*a - bf*a
+        // num_y*b ≡ af*b - ce*b
+        // So a*num_x + b*num_y ≡ de*a - bf*a + af*b - ce*b ≡ det*e
+        Self::lemma_eqv_transitive(
+            num_x.mul_spec(a).add_spec(num_y.mul_spec(b)),
+            de.mul_spec(a).sub_spec(bf.mul_spec(a)).add_spec(
+                af.mul_spec(b).sub_spec(ce.mul_spec(b))),
+            det.mul_spec(e),
+        );
+
+        // We had: det*(ax+by) ≡ a*num_x + b*num_y = num_x*a + num_y*b
+        Self::lemma_eqv_transitive(
+            det.mul_spec(sum),
+            num_x.mul_spec(a).add_spec(num_y.mul_spec(b)),
+            det.mul_spec(e),
+        );
+        // Cancel det: ax + by ≡ e
+        Self::lemma_mul_cancel_left(sum, e, det);
+
+        // === Second equation: c*x + d*y ≡ f ===
+        // By exact same argument with c,d,f instead of a,b,e.
+        // c*num_x + d*num_y = c*(de-bf) + d*(af-ce)
+        //   = cde - cbf + daf - dce
+        //   = daf - cbf + cde - dce  ... rearranging
+        //   = f*(da - cb) + e*(cd - dc)
+        //   Hmm, that doesn't simplify nicely.
+        // Actually: c*(de-bf) + d*(af-ce)
+        //   = cde - cbf + daf - dce
+        //   = daf - cbf + cde - dce  ... no
+        // Let me redo: = c*d*e - c*b*f + d*a*f - d*c*e
+        //              = (c*d*e - d*c*e) + (d*a*f - c*b*f)
+        //              = 0 + (da - cb)*f
+        //              = (ad - bc)*f  (since da=ad, cb=bc by commut)
+        //              = det * f
+
+        // So same structure. Let me do it.
+        let cx = c.mul_spec(x);
+        let dy = d.mul_spec(y);
+        let sum2 = cx.add_spec(dy);
+        Self::lemma_eqv_mul_distributive_left(det, cx, dy);
+
+        Self::lemma_mul_associative(c, x, det);
+        Self::lemma_eqv_mul_congruence_right(c, det.mul_spec(x), num_x);
+        assert(cx.mul_spec(det) == det.mul_spec(cx));
+        Self::lemma_eqv_transitive(
+            det.mul_spec(cx), c.mul_spec(x.mul_spec(det)), c.mul_spec(num_x),
+        );
+
+        Self::lemma_mul_associative(d, y, det);
+        Self::lemma_eqv_mul_congruence_right(d, det.mul_spec(y), num_y);
+        assert(dy.mul_spec(det) == det.mul_spec(dy));
+        Self::lemma_eqv_transitive(
+            det.mul_spec(dy), d.mul_spec(y.mul_spec(det)), d.mul_spec(num_y),
+        );
+
+        Self::lemma_eqv_add_congruence(
+            det.mul_spec(cx), c.mul_spec(num_x),
+            det.mul_spec(dy), d.mul_spec(num_y),
+        );
+        Self::lemma_eqv_transitive(
+            det.mul_spec(sum2),
+            det.mul_spec(cx).add_spec(det.mul_spec(dy)),
+            c.mul_spec(num_x).add_spec(d.mul_spec(num_y)),
+        );
+
+        // c*num_x + d*num_y ≡ det*f (same algebraic identity)
+        assert(c.mul_spec(num_x) == num_x.mul_spec(c));
+        assert(d.mul_spec(num_y) == num_y.mul_spec(d));
+        Self::lemma_sub_mul_right(de, bf, c);
+        Self::lemma_sub_mul_right(af, ce, d);
+        Self::lemma_eqv_add_congruence(
+            num_x.mul_spec(c), de.mul_spec(c).sub_spec(bf.mul_spec(c)),
+            num_y.mul_spec(d), af.mul_spec(d).sub_spec(ce.mul_spec(d)),
+        );
+
+        // de*c ≡ cd*e, bf*c ≡ bc*f... wait let me redo for second eq.
+        // de*c: (d*e)*c ≡ d*(e*c) = d*(c*e) ≡ (d*c)*e = (c*d)*e
+        Self::lemma_mul_associative(d, e, c);
+        Self::lemma_mul_commutative(e, c);
+        Self::lemma_mul_associative(d, c, e);
+        Self::lemma_eqv_symmetric(d.mul_spec(c).mul_spec(e), d.mul_spec(c.mul_spec(e)));
+        Self::lemma_mul_commutative(d, c);
+        let cd = c.mul_spec(d);
+        let dc = d.mul_spec(c);
+        assert(dc == cd);
+        Self::lemma_eqv_transitive(
+            de.mul_spec(c), d.mul_spec(e.mul_spec(c)), d.mul_spec(c.mul_spec(e)),
+        );
+        Self::lemma_eqv_transitive(de.mul_spec(c), d.mul_spec(c.mul_spec(e)), cd.mul_spec(e));
+        // cd*e ≡ dc*e = de*c is what we showed. So de*c ≡ cd*e.
+
+        // ce*d: (c*e)*d ≡ c*(e*d) = c*(d*e) ≡ (c*d)*e = cd*e
+        Self::lemma_mul_associative(c, e, d);
+        Self::lemma_mul_commutative(e, d);
+        Self::lemma_mul_associative(c, d, e);
+        Self::lemma_eqv_symmetric(cd.mul_spec(e), c.mul_spec(d.mul_spec(e)));
+        Self::lemma_eqv_transitive(
+            ce.mul_spec(d), c.mul_spec(e.mul_spec(d)), c.mul_spec(d.mul_spec(e)),
+        );
+        Self::lemma_eqv_transitive(ce.mul_spec(d), c.mul_spec(d.mul_spec(e)), cd.mul_spec(e));
+        // So de*c ≡ cd*e and ce*d ≡ cd*e, hence de*c ≡ ce*d
+        Self::lemma_eqv_symmetric(ce.mul_spec(d), cd.mul_spec(e));
+        Self::lemma_eqv_transitive(de.mul_spec(c), cd.mul_spec(e), ce.mul_spec(d));
+
+        // bf*c ≡ af*d: both ≡ ?
+        // Actually we need: bf*c ≡ ? and af*d ≡ ?
+        // Let me check what we need:
+        // (de*c - bf*c) + (af*d - ce*d) ≡ det*f = (ad-bc)*f
+        // de*c ≡ ce*d (shown above), so these cancel:
+        // ≡ af*d - bf*c
+        // af*d: (a*f)*d ≡ a*(f*d) = a*(d*f) ≡ (a*d)*f = ad*f
+        Self::lemma_mul_associative(a, f, d);
+        Self::lemma_mul_commutative(f, d);
+        Self::lemma_mul_associative(a, d, f);
+        Self::lemma_eqv_symmetric(ad.mul_spec(f), a.mul_spec(d.mul_spec(f)));
+        Self::lemma_eqv_transitive(
+            af.mul_spec(d), a.mul_spec(f.mul_spec(d)), a.mul_spec(d.mul_spec(f)),
+        );
+        Self::lemma_eqv_transitive(af.mul_spec(d), a.mul_spec(d.mul_spec(f)), ad.mul_spec(f));
+
+        // bf*c: (b*f)*c ≡ b*(f*c) = b*(c*f) ≡ (b*c)*f = bc*f
+        Self::lemma_mul_associative(b, f, c);
+        Self::lemma_mul_commutative(f, c);
+        Self::lemma_mul_associative(b, c, f);
+        Self::lemma_eqv_symmetric(bc_.mul_spec(f), b.mul_spec(c.mul_spec(f)));
+        Self::lemma_eqv_transitive(
+            bf.mul_spec(c), b.mul_spec(f.mul_spec(c)), b.mul_spec(c.mul_spec(f)),
+        );
+        Self::lemma_eqv_transitive(bf.mul_spec(c), b.mul_spec(c.mul_spec(f)), bc_.mul_spec(f));
+
+        // (de*c - bf*c) ≡ (ce*d - bc*f)... wait, de*c ≡ ce*d
+        Self::lemma_eqv_sub_congruence(de.mul_spec(c), ce.mul_spec(d), bf.mul_spec(c), bf.mul_spec(c));
+        Self::lemma_eqv_reflexive(bf.mul_spec(c));
+        // (af*d - ce*d) ≡ (ad*f - ce*d)... wait
+        Self::lemma_eqv_reflexive(ce.mul_spec(d));
+        Self::lemma_eqv_sub_congruence(af.mul_spec(d), ad.mul_spec(f), ce.mul_spec(d), ce.mul_spec(d));
+
+        // (de*c - bf*c) + (af*d - ce*d) ≡ (ce*d - bf*c) + (ad*f - ce*d)
+        Self::lemma_eqv_add_congruence(
+            de.mul_spec(c).sub_spec(bf.mul_spec(c)),
+            ce.mul_spec(d).sub_spec(bf.mul_spec(c)),
+            af.mul_spec(d).sub_spec(ce.mul_spec(d)),
+            ad.mul_spec(f).sub_spec(ce.mul_spec(d)),
+        );
+
+        // (ce*d - bf*c) + (ad*f - ce*d) ≡ ad*f - bf*c  by eqv_sub_chain
+        Self::lemma_eqv_sub_chain(ad.mul_spec(f), ce.mul_spec(d), bf.mul_spec(c));
+        // Wait, sub_chain(X, Y, Z) gives (X-Y) + (Y-Z) ≡ X-Z
+        // I need (ce*d - bf*c) + (ad*f - ce*d):
+        // With X=ce*d, Y=bf*c... no that gives (ce*d - bf*c) + (bf*c - ?)
+        // I need X=ad*f, Y=ce*d, Z=bf*c:
+        // (ad*f - ce*d) + (ce*d - bf*c) ≡ ad*f - bf*c
+        // But the order is (ce*d - bf*c) + (ad*f - ce*d), which is reversed.
+        // Use add_commutative:
+        Self::lemma_add_commutative(
+            ce.mul_spec(d).sub_spec(bf.mul_spec(c)),
+            ad.mul_spec(f).sub_spec(ce.mul_spec(d)),
+        );
+        Self::lemma_eqv_sub_chain(ad.mul_spec(f), ce.mul_spec(d), bf.mul_spec(c));
+        Self::lemma_eqv_transitive(
+            ce.mul_spec(d).sub_spec(bf.mul_spec(c)).add_spec(
+                ad.mul_spec(f).sub_spec(ce.mul_spec(d))),
+            ad.mul_spec(f).sub_spec(ce.mul_spec(d)).add_spec(
+                ce.mul_spec(d).sub_spec(bf.mul_spec(c))),
+            ad.mul_spec(f).sub_spec(bf.mul_spec(c)),
+        );
+
+        // ad*f - bf*c ≡ ad*f - bc*f (since bf*c ≡ bc*f)
+        Self::lemma_eqv_reflexive(ad.mul_spec(f));
+        Self::lemma_eqv_sub_congruence(
+            ad.mul_spec(f), ad.mul_spec(f),
+            bf.mul_spec(c), bc_.mul_spec(f),
+        );
+        // ad*f - bc*f ≡ (ad - bc)*f = det*f
+        Self::lemma_sub_mul_right(ad, bc_, f);
+        Self::lemma_eqv_symmetric(ad.mul_spec(f).sub_spec(bc_.mul_spec(f)), det.mul_spec(f));
+
+        // Full chain for second eq:
+        Self::lemma_eqv_transitive(
+            num_x.mul_spec(c).add_spec(num_y.mul_spec(d)),
+            de.mul_spec(c).sub_spec(bf.mul_spec(c)).add_spec(
+                af.mul_spec(d).sub_spec(ce.mul_spec(d))),
+            ce.mul_spec(d).sub_spec(bf.mul_spec(c)).add_spec(
+                ad.mul_spec(f).sub_spec(ce.mul_spec(d))),
+        );
+        Self::lemma_eqv_transitive(
+            num_x.mul_spec(c).add_spec(num_y.mul_spec(d)),
+            ce.mul_spec(d).sub_spec(bf.mul_spec(c)).add_spec(
+                ad.mul_spec(f).sub_spec(ce.mul_spec(d))),
+            ad.mul_spec(f).sub_spec(bf.mul_spec(c)),
+        );
+        Self::lemma_eqv_transitive(
+            num_x.mul_spec(c).add_spec(num_y.mul_spec(d)),
+            ad.mul_spec(f).sub_spec(bf.mul_spec(c)),
+            ad.mul_spec(f).sub_spec(bc_.mul_spec(f)),
+        );
+        Self::lemma_eqv_transitive(
+            num_x.mul_spec(c).add_spec(num_y.mul_spec(d)),
+            ad.mul_spec(f).sub_spec(bc_.mul_spec(f)),
+            det.mul_spec(f),
+        );
+
+        // det*(cx+dy) ≡ c*num_x + d*num_y ≡ det*f
+        Self::lemma_eqv_transitive(
+            det.mul_spec(sum2),
+            num_x.mul_spec(c).add_spec(num_y.mul_spec(d)),
+            det.mul_spec(f),
+        );
+        // Cancel det
+        Self::lemma_mul_cancel_left(sum2, f, det);
+
+        // Second eq: c*x + d*y ≡ f
+        // (We showed det*(cx+dy) ≡ det*f, cancelled to cx+dy ≡ f)
+        Self::lemma_mul_commutative(e, det);
+        Self::lemma_div_mul_cancel(e, det);
+        Self::lemma_mul_commutative(f, det);
+        Self::lemma_div_mul_cancel(f, det);
+    }
+
+    // ── Integer power (item 22) ───────────────────────────────────────
+
+    /// a^n by repeated multiplication.
+    pub open spec fn pow_spec(self, n: nat) -> Self
+        decreases n,
+    {
+        if n == 0 {
+            Self::from_int_spec(1)
+        } else {
+            self.mul_spec(self.pow_spec((n - 1) as nat))
+        }
+    }
+
+    /// a^0 == 1 (structural).
+    pub proof fn lemma_pow_zero(a: Self)
+        ensures
+            a.pow_spec(0) == Self::from_int_spec(1),
+    {}
+
+    /// a^1 ≡ a.
+    pub proof fn lemma_pow_one(a: Self)
+        ensures
+            a.pow_spec(1).eqv_spec(a),
+    {
+        // a^1 = a * a^0 = a * from_int(1)
+        // Unfold: pow_spec(1) with n=1 > 0, so a.mul_spec(a.pow_spec(0))
+        // pow_spec(0) = from_int_spec(1)
+        assert(a.pow_spec(0nat) == Self::from_int_spec(1));
+        assert(a.pow_spec(1nat) == a.mul_spec(a.pow_spec(0nat)));
+        Self::lemma_mul_one_identity(a);
+    }
+
+    /// a^2 ≡ a*a.
+    pub proof fn lemma_pow_two(a: Self)
+        ensures
+            a.pow_spec(2).eqv_spec(a.mul_spec(a)),
+    {
+        // a^2 = a * a^1
+        assert(a.pow_spec(2) == a.mul_spec(a.pow_spec(1)));
+        // a^1 ≡ a
+        Self::lemma_pow_one(a);
+        Self::lemma_eqv_mul_congruence_right(a, a.pow_spec(1), a);
+    }
+
+    /// a^(n+1) == a * a^n (structural, from definition).
+    pub proof fn lemma_pow_succ(a: Self, n: nat)
+        ensures
+            a.pow_spec(n + 1) == a.mul_spec(a.pow_spec(n)),
+    {}
+
+    /// (a*b)^n ≡ a^n * b^n.
+    pub proof fn lemma_pow_mul(a: Self, b: Self, n: nat)
+        ensures
+            a.mul_spec(b).pow_spec(n).eqv_spec(
+                a.pow_spec(n).mul_spec(b.pow_spec(n))),
+        decreases n,
+    {
+        if n == 0 {
+            // (a*b)^0 = 1, a^0 * b^0 = 1 * 1
+            Self::lemma_from_int_mul(1, 1);
+            // from_int(1) * from_int(1) ≡ from_int(1*1) = from_int(1)
+            Self::lemma_eqv_symmetric(
+                Self::from_int_spec(1).mul_spec(Self::from_int_spec(1)),
+                Self::from_int_spec(1),
+            );
+        } else {
+            let ab = a.mul_spec(b);
+            // (ab)^n = ab * (ab)^(n-1)
+            // By IH: (ab)^(n-1) ≡ a^(n-1) * b^(n-1)
+            Self::lemma_pow_mul(a, b, (n - 1) as nat);
+            // ab * (ab)^(n-1) ≡ ab * (a^(n-1) * b^(n-1))
+            Self::lemma_eqv_mul_congruence_right(
+                ab, ab.pow_spec((n - 1) as nat),
+                a.pow_spec((n - 1) as nat).mul_spec(b.pow_spec((n - 1) as nat)),
+            );
+            // ab * (a^(n-1) * b^(n-1)) ≡ (a * a^(n-1)) * (b * b^(n-1))
+            // = a^n * b^n
+            // This requires rearranging: a*b * (a'*b') = (a*a') * (b*b')
+            // by assoc and commut.
+            let an1 = a.pow_spec((n - 1) as nat);
+            let bn1 = b.pow_spec((n - 1) as nat);
+            // ab * (an1 * bn1) ≡ a * (b * (an1 * bn1)) by assoc
+            Self::lemma_mul_associative(a, b, an1.mul_spec(bn1));
+            // b * (an1 * bn1) ≡ (b * an1) * bn1 by assoc (backward)
+            Self::lemma_mul_associative(b, an1, bn1);
+            Self::lemma_eqv_symmetric(b.mul_spec(an1).mul_spec(bn1), b.mul_spec(an1.mul_spec(bn1)));
+            // b * an1 == an1 * b by commut
+            Self::lemma_mul_commutative(b, an1);
+            assert(b.mul_spec(an1) == an1.mul_spec(b));
+            // (an1 * b) * bn1 ≡ an1 * (b * bn1) by assoc
+            Self::lemma_mul_associative(an1, b, bn1);
+            // So b * (an1 * bn1) ≡ (b*an1)*bn1 = (an1*b)*bn1 ≡ an1*(b*bn1)
+            Self::lemma_eqv_transitive(
+                b.mul_spec(an1.mul_spec(bn1)),
+                b.mul_spec(an1).mul_spec(bn1),
+                an1.mul_spec(b.mul_spec(bn1)),
+            );
+            // a * (b * (an1 * bn1)) ≡ a * (an1 * (b * bn1))
+            Self::lemma_eqv_mul_congruence_right(
+                a, b.mul_spec(an1.mul_spec(bn1)), an1.mul_spec(b.mul_spec(bn1)),
+            );
+            // a * (an1 * (b*bn1)) ≡ (a*an1) * (b*bn1) by assoc (backward)
+            Self::lemma_mul_associative(a, an1, b.mul_spec(bn1));
+            Self::lemma_eqv_symmetric(
+                a.mul_spec(an1).mul_spec(b.mul_spec(bn1)),
+                a.mul_spec(an1.mul_spec(b.mul_spec(bn1))),
+            );
+            // Chain: ab*(an1*bn1) ≡ a*(b*(an1*bn1)) ≡ a*(an1*(b*bn1)) ≡ (a*an1)*(b*bn1)
+            Self::lemma_eqv_transitive(
+                ab.mul_spec(an1.mul_spec(bn1)),
+                a.mul_spec(b.mul_spec(an1.mul_spec(bn1))),
+                a.mul_spec(an1.mul_spec(b.mul_spec(bn1))),
+            );
+            Self::lemma_eqv_transitive(
+                ab.mul_spec(an1.mul_spec(bn1)),
+                a.mul_spec(an1.mul_spec(b.mul_spec(bn1))),
+                a.mul_spec(an1).mul_spec(b.mul_spec(bn1)),
+            );
+            // Full chain: (ab)^n ≡ ab * (an1*bn1) ≡ (a*an1)*(b*bn1) = a^n * b^n
+            Self::lemma_eqv_transitive(
+                ab.pow_spec(n),
+                ab.mul_spec(a.pow_spec((n - 1) as nat).mul_spec(b.pow_spec((n - 1) as nat))),
+                a.mul_spec(an1).mul_spec(b.mul_spec(bn1)),
+            );
+        }
+    }
+
+    /// a^(m+n) ≡ a^m * a^n.
+    pub proof fn lemma_pow_add(a: Self, m: nat, n: nat)
+        ensures
+            a.pow_spec(m + n).eqv_spec(
+                a.pow_spec(m).mul_spec(a.pow_spec(n))),
+        decreases m,
+    {
+        if m == 0 {
+            // a^(0+n) = a^n, a^0 * a^n = 1 * a^n = a^n
+            Self::lemma_mul_one_identity(a.pow_spec(n));
+            Self::lemma_eqv_symmetric(
+                Self::from_int_spec(1).mul_spec(a.pow_spec(n)),
+                a.pow_spec(n),
+            );
+        } else {
+            // a^(m+n) = a * a^(m-1+n)
+            // By IH: a^(m-1+n) ≡ a^(m-1) * a^n
+            Self::lemma_pow_add(a, (m - 1) as nat, n);
+            // a * a^(m-1+n) ≡ a * (a^(m-1) * a^n)
+            Self::lemma_eqv_mul_congruence_right(
+                a, a.pow_spec(((m - 1) as nat) + n),
+                a.pow_spec((m - 1) as nat).mul_spec(a.pow_spec(n)),
+            );
+            // a * (a^(m-1) * a^n) ≡ (a * a^(m-1)) * a^n by assoc (backward)
+            Self::lemma_mul_associative(a, a.pow_spec((m - 1) as nat), a.pow_spec(n));
+            Self::lemma_eqv_symmetric(
+                a.mul_spec(a.pow_spec((m - 1) as nat)).mul_spec(a.pow_spec(n)),
+                a.mul_spec(a.pow_spec((m - 1) as nat).mul_spec(a.pow_spec(n))),
+            );
+            // Chain
+            Self::lemma_eqv_transitive(
+                a.pow_spec(m + n),
+                a.mul_spec(a.pow_spec((m - 1) as nat).mul_spec(a.pow_spec(n))),
+                a.mul_spec(a.pow_spec((m - 1) as nat)).mul_spec(a.pow_spec(n)),
+            );
+            // a * a^(m-1) = a^m by definition
+        }
+    }
+
+    /// 0 ≤ a^(2n).
+    pub proof fn lemma_pow_even_nonneg(a: Self, n: nat)
+        ensures
+            Self::from_int_spec(0).le_spec(a.pow_spec(2 * n)),
+        decreases n,
+    {
+        if n == 0 {
+            // a^0 = 1, 0 ≤ 1
+            Self::lemma_from_int_preserves_le(0, 1);
+        } else {
+            // a^(2n) = a^(2(n-1) + 2) = a^(2(n-1)) * a^2
+            Self::lemma_pow_add(a, 2 * ((n - 1) as nat), 2);
+            let prev = a.pow_spec(2 * ((n - 1) as nat));
+            let sq = a.pow_spec(2);
+            // 0 ≤ prev by IH
+            Self::lemma_pow_even_nonneg(a, (n - 1) as nat);
+            // 0 ≤ sq (a^2 ≡ a*a ≥ 0)
+            Self::lemma_pow_two(a);
+            Self::lemma_square_le_nonneg(a);
+            let z = Self::from_int_spec(0);
+            // 0 ≤ a*a and sq ≡ a*a, so 0 ≤ sq
+            Self::lemma_eqv_symmetric(sq, a.mul_spec(a));
+            Self::lemma_eqv_implies_le(a.mul_spec(a), sq);
+            Self::lemma_le_transitive(z, a.mul_spec(a), sq);
+            // 0 ≤ prev and 0 ≤ sq → 0 ≤ prev*sq
+            Self::lemma_le_mul_nonneg_both(z, prev, z, sq);
+            // prev*sq ≡ a^(2n)
+            Self::lemma_eqv_symmetric(a.pow_spec(2 * n), prev.mul_spec(sq));
+            Self::lemma_eqv_implies_le(prev.mul_spec(sq), a.pow_spec(2 * n));
+            // 0*0 ≡ 0
+            Self::lemma_mul_zero(z);
+            Self::lemma_eqv_implies_le(z, z.mul_spec(z));
+            Self::lemma_le_transitive(z, z.mul_spec(z), prev.mul_spec(sq));
+            Self::lemma_le_transitive(z, prev.mul_spec(sq), a.pow_spec(2 * n));
+        }
+    }
+    // ── Quadratic discriminant (item 21) ────────────────────────────
+
+    /// discriminant(a, b, c) = b² - 4ac.
+    pub open spec fn discriminant_spec(a: Self, b: Self, c: Self) -> Self {
+        b.mul_spec(b).sub_spec(
+            Self::from_int_spec(4).mul_spec(a.mul_spec(c)))
+    }
+
+    /// If t is a rational root of ax²+bx+c, verify it satisfies the equation.
+    pub proof fn lemma_quadratic_at_rational_root(a: Self, b: Self, c: Self, t: Self)
+        requires
+            a.mul_spec(t.mul_spec(t)).add_spec(b.mul_spec(t)).add_spec(c)
+                .eqv_spec(Self::from_int_spec(0)),
+        ensures
+            a.mul_spec(t).mul_spec(t).add_spec(b.mul_spec(t)).add_spec(c)
+                .eqv_spec(Self::from_int_spec(0)),
+    {
+        // a*(t*t) ≡ (a*t)*t by associativity (backward)
+        Self::lemma_mul_associative(a, t, t);
+        Self::lemma_eqv_symmetric(
+            a.mul_spec(t).mul_spec(t),
+            a.mul_spec(t.mul_spec(t)),
+        );
+        // Replace a*(t*t) with (a*t)*t in the sum
+        Self::lemma_eqv_add_congruence_left(
+            a.mul_spec(t.mul_spec(t)),
+            a.mul_spec(t).mul_spec(t),
+            b.mul_spec(t),
+        );
+        Self::lemma_eqv_add_congruence_left(
+            a.mul_spec(t.mul_spec(t)).add_spec(b.mul_spec(t)),
+            a.mul_spec(t).mul_spec(t).add_spec(b.mul_spec(t)),
+            c,
+        );
+        Self::lemma_eqv_transitive(
+            a.mul_spec(t).mul_spec(t).add_spec(b.mul_spec(t)).add_spec(c),
+            a.mul_spec(t.mul_spec(t)).add_spec(b.mul_spec(t)).add_spec(c),
+            Self::from_int_spec(0),
+        );
+    }
+
+    /// When disc = 0 and a ≢ 0, the double root -b/(2a) satisfies ax²+bx+c = 0.
+    pub proof fn lemma_quadratic_double_root(a: Self, b: Self, c: Self)
+        requires
+            !a.eqv_spec(Self::from_int_spec(0)),
+            Self::discriminant_spec(a, b, c).eqv_spec(Self::from_int_spec(0)),
+        ensures ({
+            let two_a = Self::from_int_spec(2).mul_spec(a);
+            let t = b.neg_spec().div_spec(two_a);
+            a.mul_spec(t.mul_spec(t)).add_spec(b.mul_spec(t)).add_spec(c)
+                .eqv_spec(Self::from_int_spec(0))
+        }),
+    {
+        let z = Self::from_int_spec(0);
+        let two = Self::from_int_spec(2);
+        let four = Self::from_int_spec(4);
+        let two_a = two.mul_spec(a);
+        let nb = b.neg_spec();
+        let t = nb.div_spec(two_a);
+
+        Self::lemma_eqv_zero_iff_num_zero(a);
+        // 2a ≢ 0 since a ≢ 0
+        Self::lemma_eqv_zero_iff_num_zero(two_a);
+        Self::lemma_mul_denom_product_int(two, a);
+        assert(two.num == 2);
+        assert(two.denom() == 1);
+        assert(two_a.num == 2 * a.num);
+        assert(two_a.num != 0) by (nonlinear_arith)
+            requires a.num != 0, two_a.num == 2 * a.num;
+
+        // Algebraic approach: factor a*t²+b*t = t*(a*t+b), show a*t+b ≡ b/2,
+        // then show (b/2)*t + c ≡ 0 using disc=0.
+
+        // Step 1: 2a*t ≡ -b (from div_cancel)
+        Self::lemma_div_cancel(two_a, nb);
+        // two_a * t ≡ nb
+
+        // Step 2: Derive 2*(a*t) ≡ -b using associativity
+        let at_ = a.mul_spec(t);
+        Self::lemma_mul_associative(two, a, t);
+        // (two*a)*t ≡ two*(a*t), i.e., two_a*t ≡ two*at_
+        Self::lemma_eqv_symmetric(two.mul_spec(a).mul_spec(t), two.mul_spec(a.mul_spec(t)));
+        // two*at_ ≡ two_a*t
+        Self::lemma_eqv_transitive(two.mul_spec(at_), two_a.mul_spec(t), nb);
+        // two*at_ ≡ nb
+
+        // Step 3: a*t ≡ -b/2 by cancellation
+        let recip_two = two.reciprocal_spec();
+        let half_nb = nb.div_spec(two);   // = nb * recip(2) = -b/2
+        let half_b = b.div_spec(two);     // = b * recip(2) = b/2
+
+        Self::lemma_eqv_zero_iff_num_zero(two);
+        Self::lemma_div_cancel(two, nb);
+        // two * half_nb ≡ nb
+        Self::lemma_eqv_symmetric(two.mul_spec(half_nb), nb);
+        // nb ≡ two * half_nb
+        Self::lemma_eqv_transitive(two.mul_spec(at_), nb, two.mul_spec(half_nb));
+        // two*at_ ≡ two*half_nb
+        Self::lemma_mul_cancel_left(at_, half_nb, two);
+        // at_ ≡ half_nb, i.e., a*t ≡ -b/2
+
+        // Step 4: Show half_nb == half_b.neg_spec() (structural)
+        Self::lemma_mul_commutative(nb, recip_two);
+        Self::lemma_mul_neg_right(recip_two, b);
+        Self::lemma_mul_commutative(recip_two, b);
+        // half_nb = nb * recip_two == recip_two * nb == recip_two * b.neg_spec()
+        //         == (recip_two * b).neg_spec() == (b * recip_two).neg_spec()
+        //         == half_b.neg_spec()
+        assert(half_nb == half_b.neg_spec());
+
+        // Step 5: a*t + b ≡ half_b
+        // First show b ≡ half_b + half_b:
+        Self::lemma_div_cancel(two, b);
+        // two * half_b ≡ b
+        Self::lemma_double(half_b);
+        // half_b + half_b ≡ two * half_b
+        Self::lemma_eqv_transitive(
+            half_b.add_spec(half_b), two.mul_spec(half_b), b);
+        // half_b + half_b ≡ b
+        Self::lemma_eqv_symmetric(half_b.add_spec(half_b), b);
+        // b ≡ half_b + half_b
+
+        // at_ + b ≡ half_nb + b (by congruence with at_ ≡ half_nb)
+        Self::lemma_eqv_add_congruence_left(at_, half_nb, b);
+        // at_ + b ≡ half_nb + b
+
+        // half_nb + b ≡ half_nb + (half_b + half_b) (by congruence)
+        Self::lemma_eqv_add_congruence_right(half_nb, b, half_b.add_spec(half_b));
+        // half_nb + b ≡ half_nb + (half_b + half_b)
+
+        // (half_nb + half_b) + half_b ≡ half_nb + (half_b + half_b) (associativity)
+        Self::lemma_add_associative(half_nb, half_b, half_b);
+        Self::lemma_eqv_symmetric(
+            half_nb.add_spec(half_b).add_spec(half_b),
+            half_nb.add_spec(half_b.add_spec(half_b)));
+        // half_nb + (half_b + half_b) ≡ (half_nb + half_b) + half_b
+
+        // half_nb + half_b ≡ 0 (since half_nb == -half_b)
+        Self::lemma_add_commutative(half_nb, half_b);
+        // half_nb + half_b ≡ half_b + half_nb
+        // half_nb == half_b.neg_spec(), so half_b + half_nb == half_b + half_b.neg_spec()
+        //                              == half_b.sub_spec(half_b)
+        Self::lemma_sub_self(half_b);
+        // half_b.sub_spec(half_b) ≡ 0
+        // half_b + half_b.neg_spec() == half_b.sub_spec(half_b) [structural from sub_spec def]
+        Self::lemma_eqv_transitive(
+            half_nb.add_spec(half_b),
+            half_b.add_spec(half_nb),
+            Self::from_int_spec(0));
+        // half_nb + half_b ≡ 0
+
+        // (half_nb + half_b) + half_b ≡ 0 + half_b (congruence)
+        Self::lemma_eqv_add_congruence_left(
+            half_nb.add_spec(half_b),
+            Self::from_int_spec(0),
+            half_b);
+        // 0 + half_b == half_b (structural from add_zero_identity)
+        Self::lemma_add_zero_identity(half_b);
+
+        // Chain: at_ + b ≡ half_nb + b ≡ half_nb + (half_b + half_b)
+        //        ≡ (half_nb + half_b) + half_b ≡ 0 + half_b == half_b
+        Self::lemma_eqv_transitive(
+            at_.add_spec(b), half_nb.add_spec(b),
+            half_nb.add_spec(half_b.add_spec(half_b)));
+        Self::lemma_eqv_transitive(
+            at_.add_spec(b),
+            half_nb.add_spec(half_b.add_spec(half_b)),
+            half_nb.add_spec(half_b).add_spec(half_b));
+        Self::lemma_eqv_transitive(
+            at_.add_spec(b),
+            half_nb.add_spec(half_b).add_spec(half_b),
+            Self::from_int_spec(0).add_spec(half_b));
+        // at_ + b ≡ 0 + half_b == half_b
+        // So at_ + b ≡ half_b (via eqv with the structural == step)
+        Self::lemma_eqv_reflexive(half_b);
+
+        // Step 6: Factor: a*(t*t) + b*t ≡ (a*t + b) * t
+        let tt = t.mul_spec(t);
+        let att = a.mul_spec(tt);
+        let bt = b.mul_spec(t);
+        let att_bt = att.add_spec(bt);
+        let at_b = at_.add_spec(b);
+        let at_b_t = at_b.mul_spec(t);
+
+        // (a*t + b)*t ≡ (a*t)*t + b*t  [distributive]
+        Self::lemma_eqv_mul_distributive_right(at_, b, t);
+        // at_b * t ≡ at_*t + b*t
+
+        // (a*t)*t ≡ a*(t*t)  [associativity]
+        Self::lemma_mul_associative(a, t, t);
+        Self::lemma_eqv_add_congruence_left(
+            a.mul_spec(t).mul_spec(t), a.mul_spec(t.mul_spec(t)), bt);
+        // (a*t)*t + bt ≡ a*(t*t) + bt = att + bt = att_bt
+
+        // at_b_t ≡ at_*t + bt ≡ att_bt
+        Self::lemma_eqv_transitive(at_b_t, at_.mul_spec(t).add_spec(bt), att_bt);
+        // att_bt ≡ at_b_t [symmetric]
+        Self::lemma_eqv_symmetric(at_b_t, att_bt);
+
+        // Step 7: att_bt ≡ half_b * t (via congruence)
+        let half_b_t = half_b.mul_spec(t);
+        // at_b ≡ half_b (from step 5, eqv chain above)
+        // We need to establish at_b ≡ half_b properly for mul_congruence
+        // at_ + b ≡ z + half_b, and z + half_b == half_b structurally
+        // So at_b.eqv_spec(half_b)
+        Self::lemma_eqv_mul_congruence_left(at_b, half_b, t);
+        // at_b_t ≡ half_b_t
+
+        // att_bt ≡ at_b_t ≡ half_b_t
+        Self::lemma_eqv_transitive(att_bt, at_b_t, half_b_t);
+        // att_bt ≡ half_b_t
+
+        // Step 8: expr = att_bt + c ≡ half_b_t + c
+        let expr = att_bt.add_spec(c);
+        let result = half_b_t.add_spec(c);
+        Self::lemma_eqv_add_congruence_left(att_bt, half_b_t, c);
+        // expr ≡ result
+
+        // Step 9: Show result ≡ 0 at the numerator level.
+        // half_b.num = b.num, half_b.denom() = 2 * b.denom()
+        // (since from_int(2).reciprocal_spec() = Rational{num:1, den:1},
+        //  so half_b = b * Rational{num:1, den:1}, half_b.num = b.num*1,
+        //  half_b.denom() = b.denom() * 2)
+        Self::lemma_mul_denom_product_int(b, recip_two);
+        assert(recip_two.num == 1);
+        assert(recip_two.denom() == 2);
+        assert(half_b.num == b.num);
+        assert(half_b.denom() == b.denom() * 2);
+
+        Self::lemma_mul_denom_product_int(half_b, t);
+        Self::lemma_add_denom_product_int(half_b_t, c);
+        Self::lemma_denom_positive(b);
+        Self::lemma_denom_positive(c);
+        Self::lemma_denom_positive(t);
+
+        let ghost bn = b.num;
+        let ghost bd = b.denom();
+        let ghost cn = c.num;
+        let ghost cd = c.denom();
+        let ghost tn = t.num;
+        let ghost td = t.denom();
+        let ghost an = a.num;
+        let ghost ad = a.denom();
+
+        // half_b_t.num = half_b.num * t.num = bn * tn
+        // half_b_t.denom() = half_b.denom() * t.denom() = 2*bd * td
+        // result.num = half_b_t.num * c.denom() + c.num * half_b_t.denom()
+        //            = bn*tn*cd + cn*2*bd*td
+        assert(result.num == bn * tn * cd + cn * (2 * bd) * td) by (nonlinear_arith)
+            requires
+                result.num == half_b_t.num * cd + cn * half_b_t.denom(),
+                half_b_t.num == bn * tn,
+                half_b_t.denom() == (bd * 2) * td;
+
+        // From 2a*t ≡ -b, extract cross-multiplication:
+        Self::lemma_mul_denom_product_int(two_a, t);
+        assert(2 * an * tn * bd == -(bn * ad * td)) by (nonlinear_arith)
+            requires
+                two_a.mul_spec(t).num * nb.denom() == nb.num * two_a.mul_spec(t).denom(),
+                two_a.mul_spec(t).num == two_a.num * tn,
+                two_a.num == 2 * an,
+                two_a.mul_spec(t).denom() == two_a.denom() * td,
+                two_a.denom() == ad,
+                nb.num == -bn,
+                nb.denom() == bd;
+
+        // From disc ≡ 0: b² ≡ 4ac (cross-multiplication)
+        let bb = b.mul_spec(b);
+        let ac_ = a.mul_spec(c);
+        let four_ac = four.mul_spec(ac_);
+        Self::lemma_sub_eqv_zero_iff_eqv(bb, four_ac);
+        Self::lemma_mul_denom_product_int(b, b);
+        Self::lemma_mul_denom_product_int(a, c);
+        Self::lemma_mul_denom_product_int(four, ac_);
+        assert(bn * bn * (ad * cd) == 4 * an * cn * (bd * bd)) by (nonlinear_arith)
+            requires
+                bb.num * four_ac.denom() == four_ac.num * bb.denom(),
+                bb.num == bn * bn,
+                bb.denom() == bd * bd,
+                four_ac.num == four.num * ac_.num,
+                four.num == 4,
+                ac_.num == an * cn,
+                four_ac.denom() == four.denom() * ac_.denom(),
+                four.denom() == 1,
+                ac_.denom() == ad * cd;
+
+        // Show result.num == 0 by case split on bn
+        // (bn*tn*cd + 2*cn*bd*td) * (bn*ad) = 0, using both constraints
+        if bn == 0 {
+            // From disc: 0 = 4*an*cn*bd², so cn = 0
+            assert(cn == 0) by (nonlinear_arith)
+                requires bn * bn * (ad * cd) == 4 * an * cn * (bd * bd),
+                    bn == 0, an != 0, bd > 0;
+            assert(result.num == 0) by (nonlinear_arith)
+                requires result.num == bn * tn * cd + cn * (2 * bd) * td,
+                    bn == 0, cn == 0;
+        } else {
+            // Multiply (bn*tn*cd) by (bn*ad), use (**):
+            // bn*ad*(bn*tn*cd) = bn²*ad*cd*tn
+            // From (*): bn²*ad*cd = 4*an*cn*bd²
+            // So = 4*an*cn*bd²*tn
+
+            // Multiply (2*cn*bd*td) by (bn*ad), use (**):
+            // bn*ad*(2*cn*bd*td) = 2*cn*bd*(bn*ad*td) = 2*cn*bd*(-2*an*tn*bd)
+            // = -4*an*cn*bd²*tn
+
+            // Sum = 4*an*cn*bd²*tn - 4*an*cn*bd²*tn = 0
+            let ghost P = bn * tn * cd;
+            let ghost Q = 2 * cn * bd * td;
+            let ghost ba = bn * ad;
+
+            // P*ba = bn²*ad*tn*cd = (bn²*ad*cd)*tn = 4*an*cn*bd²*tn
+            let ghost P_ba = P * ba;
+            let ghost disc_factor = bn * bn * ad * cd;
+            assert(disc_factor == 4 * an * cn * bd * bd) by (nonlinear_arith)
+                requires bn * bn * (ad * cd) == 4 * an * cn * (bd * bd),
+                    disc_factor == bn * bn * ad * cd;
+            assert(P_ba == disc_factor * tn) by (nonlinear_arith)
+                requires P == bn * tn * cd, ba == bn * ad, P_ba == P * ba,
+                    disc_factor == bn * bn * ad * cd;
+            assert(P_ba == 4 * an * cn * bd * bd * tn) by (nonlinear_arith)
+                requires P_ba == disc_factor * tn,
+                    disc_factor == 4 * an * cn * bd * bd;
+
+            // Q*ba = 2*cn*bd*td*bn*ad = 2*cn*bd*(bn*ad*td)
+            let ghost Q_ba = Q * ba;
+            let ghost bat = bn * ad * td;
+            assert(bat == -(2 * an * tn * bd)) by (nonlinear_arith)
+                requires 2 * an * tn * bd == -(bn * ad * td), bat == bn * ad * td;
+            assert(Q_ba == 2 * cn * bd * bat) by (nonlinear_arith)
+                requires Q == 2 * cn * bd * td, ba == bn * ad,
+                    Q_ba == Q * ba, bat == bn * ad * td;
+            assert(Q_ba == -(4 * an * cn * bd * bd * tn)) by (nonlinear_arith)
+                requires Q_ba == 2 * cn * bd * bat,
+                    bat == -(2 * an * tn * bd);
+
+            // (P + Q) * ba = P_ba + Q_ba = 0
+            assert(P_ba + Q_ba == 0) by (nonlinear_arith)
+                requires P_ba == 4 * an * cn * bd * bd * tn,
+                    Q_ba == -(4 * an * cn * bd * bd * tn);
+            assert((P + Q) * ba == 0) by (nonlinear_arith)
+                requires P_ba + Q_ba == 0, P_ba == P * ba, Q_ba == Q * ba;
+            assert(P + Q == 0) by (nonlinear_arith)
+                requires (P + Q) * ba == 0, ba == bn * ad, bn != 0, ad > 0;
+            // Bridge: cn*(2*bd)*td == 2*cn*bd*td
+            assert(result.num == P + Q) by (nonlinear_arith)
+                requires result.num == bn * tn * cd + cn * (2 * bd) * td,
+                    P == bn * tn * cd, Q == 2 * cn * bd * td;
+            assert(result.num == 0) by (nonlinear_arith)
+                requires result.num == P + Q, P + Q == 0;
+        }
+
+        Self::lemma_eqv_zero_iff_num_zero(result);
+        // result ≡ 0, and expr ≡ result
+        Self::lemma_eqv_transitive(expr, result, Self::from_int_spec(0));
+    }
+
+    // ── Interval containment (item 23) ───────────────────────────────
+
+    /// a ∈ [lo_a, hi_a] ∧ b ∈ [lo_b, hi_b] → a+b ∈ [lo_a+lo_b, hi_a+hi_b].
+    pub proof fn lemma_add_interval(
+        a: Self, lo_a: Self, hi_a: Self,
+        b: Self, lo_b: Self, hi_b: Self,
+    )
+        requires
+            lo_a.le_spec(a), a.le_spec(hi_a),
+            lo_b.le_spec(b), b.le_spec(hi_b),
+        ensures
+            lo_a.add_spec(lo_b).le_spec(a.add_spec(b)),
+            a.add_spec(b).le_spec(hi_a.add_spec(hi_b)),
+    {
+        Self::lemma_le_add_both(lo_a, a, lo_b, b);
+        Self::lemma_le_add_both(a, hi_a, b, hi_b);
+    }
+
+    /// Both non-negative: a*b ∈ [lo_a*lo_b, hi_a*hi_b].
+    pub proof fn lemma_mul_interval_nonneg(
+        a: Self, lo_a: Self, hi_a: Self,
+        b: Self, lo_b: Self, hi_b: Self,
+    )
+        requires
+            Self::from_int_spec(0).le_spec(lo_a),
+            lo_a.le_spec(a), a.le_spec(hi_a),
+            Self::from_int_spec(0).le_spec(lo_b),
+            lo_b.le_spec(b), b.le_spec(hi_b),
+        ensures
+            lo_a.mul_spec(lo_b).le_spec(a.mul_spec(b)),
+            a.mul_spec(b).le_spec(hi_a.mul_spec(hi_b)),
+    {
+        let z = Self::from_int_spec(0);
+        Self::lemma_le_transitive(z, lo_a, a);
+        Self::lemma_le_transitive(z, lo_b, b);
+        Self::lemma_le_mul_nonneg_both(lo_a, a, lo_b, b);
+        Self::lemma_le_mul_nonneg_both(a, hi_a, b, hi_b);
+    }
+
+    /// lo ≤ hi → lo ≤ midpoint(lo, hi) ≤ hi.
+    pub proof fn lemma_interval_contains_midpoint(lo: Self, hi: Self)
+        requires
+            lo.le_spec(hi),
+        ensures
+            lo.le_spec(Self::midpoint_spec(lo, hi)),
+            Self::midpoint_spec(lo, hi).le_spec(hi),
+    {
+        Self::lemma_le_iff_lt_or_eqv(lo, hi);
+        if lo.eqv_spec(hi) {
+            Self::lemma_midpoint_eqv_self(lo);
+            Self::lemma_eqv_symmetric(Self::midpoint_spec(lo, lo), lo);
+            // midpoint(lo, hi) ≡ midpoint(lo, lo) ≡ lo
+            // Need midpoint(lo, hi) when hi ≡ lo
+            // midpoint_spec(lo, hi) = (lo + hi) * (1/2)
+            // If lo ≡ hi, then lo + hi ≡ lo + lo, so midpoint(lo, hi) ≡ midpoint(lo, lo) ≡ lo
+            Self::lemma_eqv_add_congruence_right(lo, hi, lo);
+            let half = Rational { num: 1, den: 1 };
+            Self::lemma_eqv_mul_congruence_left(lo.add_spec(hi), lo.add_spec(lo), half);
+            // midpoint(lo,hi) ≡ midpoint(lo,lo) ≡ lo ≡ hi
+            Self::lemma_eqv_transitive(
+                Self::midpoint_spec(lo, hi),
+                Self::midpoint_spec(lo, lo),
+                lo,
+            );
+            Self::lemma_eqv_implies_le(lo, Self::midpoint_spec(lo, hi));
+            Self::lemma_eqv_symmetric(Self::midpoint_spec(lo, hi), lo);
+            Self::lemma_eqv_transitive(Self::midpoint_spec(lo, hi), lo, hi);
+            Self::lemma_eqv_implies_le(Self::midpoint_spec(lo, hi), hi);
+        } else {
+            // lo < hi case
+            Self::lemma_midpoint_between_left(lo, hi);
+            Self::lemma_midpoint_between_right(lo, hi);
+            Self::lemma_lt_implies_le(lo, Self::midpoint_spec(lo, hi));
+            Self::lemma_lt_implies_le(Self::midpoint_spec(lo, hi), hi);
+        }
+    }
+
+    // ── Cauchy-Schwarz squared form (item 24) ─────────────────────────
+
+    /// (ac + bd)² ≤ (a² + b²)(c² + d²).
+    pub proof fn lemma_cauchy_schwarz_2d(a: Self, b: Self, c: Self, d: Self)
+        ensures
+            a.mul_spec(c).add_spec(b.mul_spec(d))
+                .mul_spec(a.mul_spec(c).add_spec(b.mul_spec(d)))
+                .le_spec(
+                    a.mul_spec(a).add_spec(b.mul_spec(b)).mul_spec(
+                        c.mul_spec(c).add_spec(d.mul_spec(d)))),
+    {
+        // Cauchy-Schwarz: (ac+bd)² ≤ (a²+b²)(c²+d²)
+        // Equivalently: (a²+b²)(c²+d²) - (ac+bd)² ≥ 0
+        // Expansion: a²c² + a²d² + b²c² + b²d² - a²c² - 2abcd - b²d² = a²d² - 2abcd + b²c²
+        // = (ad - bc)² ≥ 0
+        // So this reduces to proving (ad - bc)² ≥ 0, which is lemma_square_le_nonneg.
+
+        let ac = a.mul_spec(c);
+        let bd = b.mul_spec(d);
+        let dot = ac.add_spec(bd);
+        let dot_sq = dot.mul_spec(dot);
+        let aa = a.mul_spec(a);
+        let bb = b.mul_spec(b);
+        let cc = c.mul_spec(c);
+        let dd = d.mul_spec(d);
+        let norm_a = aa.add_spec(bb);
+        let norm_c = cc.add_spec(dd);
+        let prod = norm_a.mul_spec(norm_c);
+
+        // (ad - bc)² ≥ 0
+        let ad_ = a.mul_spec(d);
+        let bc__ = b.mul_spec(c);
+        let cross = ad_.sub_spec(bc__);
+        Self::lemma_square_le_nonneg(cross);
+        // cross² ≡ (ad)² - 2(ad)(bc) + (bc)²  by square_of_difference
+        Self::lemma_square_of_difference(ad_, bc__);
+
+        // prod - dot² ≡ cross² ≥ 0
+        // This means prod ≥ dot².
+        // The full algebraic proof that prod - dot² ≡ cross² is very involved.
+        // It requires expanding both sides and showing they match.
+        // For now, let me prove this at the numerator cross-multiplication level.
+
+        // Actually, the cleanest proof: show prod ≡ dot² + cross²
+        // Then since cross² ≥ 0, prod ≥ dot².
+
+        // prod = (a²+b²)(c²+d²) = a²c² + a²d² + b²c² + b²d²
+        // dot² = (ac+bd)² = a²c² + 2abcd + b²d²
+        // cross² = (ad-bc)² = a²d² - 2abcd + b²c²
+        // dot² + cross² = a²c² + 2abcd + b²d² + a²d² - 2abcd + b²c²
+        //               = a²c² + a²d² + b²c² + b²d² = prod  ✓
+
+        // Strategy: reduce to standard Cauchy-Schwarz in 4 ghost variables.
+        // Key observation: dot_sq.denom() == prod.denom() (both = ad²bd²cd²dd²),
+        // so le_spec reduces to dot.num² ≤ norm_a.num * norm_c.num.
+
+        // Establish denom products
+        Self::lemma_mul_denom_product_int(a, c);
+        Self::lemma_mul_denom_product_int(b, d);
+        Self::lemma_mul_denom_product_int(a, a);
+        Self::lemma_mul_denom_product_int(b, b);
+        Self::lemma_mul_denom_product_int(c, c);
+        Self::lemma_mul_denom_product_int(d, d);
+        Self::lemma_add_denom_product_int(ac, bd);
+        Self::lemma_add_denom_product_int(aa, bb);
+        Self::lemma_add_denom_product_int(cc, dd);
+        Self::lemma_mul_denom_product_int(dot, dot);
+        Self::lemma_mul_denom_product_int(norm_a, norm_c);
+        Self::lemma_denom_positive(a);
+        Self::lemma_denom_positive(b);
+        Self::lemma_denom_positive(c);
+        Self::lemma_denom_positive(d);
+
+        let ghost an = a.num;
+        let ghost bn = b.num;
+        let ghost cn = c.num;
+        let ghost dn = d.num;
+        let ghost ad_ = a.denom();
+        let ghost bd_ = b.denom();
+        let ghost cd_ = c.denom();
+        let ghost dd_ = d.denom();
+
+        // Ghost variables for the Cauchy-Schwarz reduction
+        let ghost x1 = an * bd_;
+        let ghost x2 = bn * ad_;
+        let ghost y1 = cn * dd_;
+        let ghost y2 = dn * cd_;
+
+        // dot.num = x1*y1 + x2*y2 (break into two product identities)
+        let ghost p1 = (an * cn) * (bd_ * dd_);
+        let ghost p2 = (bn * dn) * (ad_ * cd_);
+        assert(p1 == x1 * y1) by (nonlinear_arith)
+            requires p1 == (an * cn) * (bd_ * dd_),
+                x1 == an * bd_, y1 == cn * dd_;
+        assert(p2 == x2 * y2) by (nonlinear_arith)
+            requires p2 == (bn * dn) * (ad_ * cd_),
+                x2 == bn * ad_, y2 == dn * cd_;
+        assert(dot.num == x1 * y1 + x2 * y2) by (nonlinear_arith)
+            requires
+                dot.num == p1 + p2,
+                p1 == x1 * y1, p2 == x2 * y2;
+
+        // norm_a.num = x1² + x2²
+        assert(norm_a.num == x1 * x1 + x2 * x2) by (nonlinear_arith)
+            requires
+                norm_a.num == (an * an) * (bd_ * bd_) + (bn * bn) * (ad_ * ad_),
+                x1 == an * bd_, x2 == bn * ad_;
+
+        // norm_c.num = y1² + y2²
+        assert(norm_c.num == y1 * y1 + y2 * y2) by (nonlinear_arith)
+            requires
+                norm_c.num == (cn * cn) * (dd_ * dd_) + (dn * dn) * (cd_ * cd_),
+                y1 == cn * dd_, y2 == dn * cd_;
+
+        // Cauchy-Schwarz: (x1y1+x2y2)² ≤ (x1²+x2²)(y1²+y2²)
+        // Proof: RHS - LHS = (x1y2 - x2y1)² ≥ 0
+        let ghost z = x1 * y2 - x2 * y1;
+        assert(z * z >= 0int) by (nonlinear_arith)
+            requires z == x1 * y2 - x2 * y1;
+        // Lagrange identity via aij = xi*yj decomposition
+        let ghost a11 = x1 * y1;
+        let ghost a12 = x1 * y2;
+        let ghost a21 = x2 * y1;
+        let ghost a22 = x2 * y2;
+        // (x1²+x2²)(y1²+y2²) = a11²+a12²+a21²+a22² via distribution
+        let ghost x1sq = x1 * x1;
+        let ghost x2sq = x2 * x2;
+        // x1² * nc = a11² + a12²
+        assert(x1sq * norm_c.num == a11 * a11 + a12 * a12) by (nonlinear_arith)
+            requires
+                norm_c.num == y1 * y1 + y2 * y2,
+                x1sq == x1 * x1,
+                a11 == x1 * y1, a12 == x1 * y2;
+        // x2² * nc = a21² + a22²
+        assert(x2sq * norm_c.num == a21 * a21 + a22 * a22) by (nonlinear_arith)
+            requires
+                norm_c.num == y1 * y1 + y2 * y2,
+                x2sq == x2 * x2,
+                a21 == x2 * y1, a22 == x2 * y2;
+        // na * nc = (x1²+x2²)*nc = x1²*nc + x2²*nc
+        assert(norm_a.num * norm_c.num == a11 * a11 + a12 * a12 + a21 * a21 + a22 * a22)
+            by (nonlinear_arith)
+            requires
+                norm_a.num == x1sq + x2sq,
+                x1sq * norm_c.num == a11 * a11 + a12 * a12,
+                x2sq * norm_c.num == a21 * a21 + a22 * a22,
+                x1sq == x1 * x1, x2sq == x2 * x2;
+        // a11*a22 == a12*a21 (both = x1*x2*y1*y2)
+        assert(a11 * a22 == a12 * a21) by (nonlinear_arith)
+            requires
+                a11 == x1 * y1, a12 == x1 * y2,
+                a21 == x2 * y1, a22 == x2 * y2;
+        // dot² + z² = (a11+a22)² + (a12-a21)² = a11²+a12²+a21²+a22² + 2(a11*a22-a12*a21)
+        let ghost dot_sq_val = dot.num * dot.num;
+        let ghost sum_sq = a11 * a11 + a12 * a12 + a21 * a21 + a22 * a22;
+        assert(dot_sq_val + z * z == sum_sq) by (nonlinear_arith)
+            requires
+                dot.num == a11 + a22,
+                z == a12 - a21,
+                dot_sq_val == dot.num * dot.num,
+                sum_sq == a11 * a11 + a12 * a12 + a21 * a21 + a22 * a22,
+                a11 * a22 == a12 * a21;
+        assert(dot.num * dot.num <= norm_a.num * norm_c.num) by (nonlinear_arith)
+            requires
+                dot_sq_val == dot.num * dot.num,
+                dot_sq_val + z * z == sum_sq,
+                norm_a.num * norm_c.num == sum_sq,
+                z * z >= 0int;
+
+        // Show dot_sq.denom() == prod.denom()
+        // Both equal ad²bd²cd²dd² (just different parenthesization)
+        let ghost D1 = ad_ * cd_;
+        let ghost D2 = bd_ * dd_;
+        let ghost D1sq = D1 * D1;
+        let ghost D2sq = D2 * D2;
+        assert((D1 * D2) * (D1 * D2) == D1sq * D2sq) by (nonlinear_arith)
+            requires D1sq == D1 * D1, D2sq == D2 * D2;
+        assert(dot_sq.denom() == D1sq * D2sq) by (nonlinear_arith)
+            requires
+                dot_sq.denom() == dot.denom() * dot.denom(),
+                dot.denom() == D1 * D2,
+                D1sq == D1 * D1, D2sq == D2 * D2;
+
+        let ghost na_d = ad_ * ad_ * (bd_ * bd_);
+        let ghost nc_d = cd_ * cd_ * (dd_ * dd_);
+        assert(prod.denom() == na_d * nc_d) by (nonlinear_arith)
+            requires
+                prod.denom() == norm_a.denom() * norm_c.denom(),
+                norm_a.denom() == (ad_ * ad_) * (bd_ * bd_),
+                norm_c.denom() == (cd_ * cd_) * (dd_ * dd_),
+                na_d == ad_ * ad_ * (bd_ * bd_),
+                nc_d == cd_ * cd_ * (dd_ * dd_);
+
+        assert(D1sq * D2sq == na_d * nc_d) by (nonlinear_arith)
+            requires
+                D1sq == (ad_ * cd_) * (ad_ * cd_),
+                D2sq == (bd_ * dd_) * (bd_ * dd_),
+                na_d == ad_ * ad_ * (bd_ * bd_),
+                nc_d == cd_ * cd_ * (dd_ * dd_),
+                D1 == ad_ * cd_, D2 == bd_ * dd_;
+
+        assert(dot_sq.denom() == prod.denom()) by (nonlinear_arith)
+            requires
+                dot_sq.denom() == D1sq * D2sq,
+                prod.denom() == na_d * nc_d,
+                D1sq * D2sq == na_d * nc_d;
+
+        // prod.denom() > 0
+        assert(prod.denom() > 0) by (nonlinear_arith)
+            requires
+                prod.denom() == na_d * nc_d,
+                na_d == ad_ * ad_ * (bd_ * bd_),
+                nc_d == cd_ * cd_ * (dd_ * dd_),
+                ad_ > 0, bd_ > 0, cd_ > 0, dd_ > 0;
+
+        // Final: since dot_sq.denom() == prod.denom() and
+        // dot.num² ≤ norm_a.num * norm_c.num,
+        // we get dot_sq.num * prod.denom() ≤ prod.num * dot_sq.denom()
+        assert(dot_sq.num * prod.denom() <= prod.num * dot_sq.denom())
+            by (nonlinear_arith)
+            requires
+                dot_sq.num == dot.num * dot.num,
+                prod.num == norm_a.num * norm_c.num,
+                dot_sq.denom() == prod.denom(),
+                dot.num * dot.num <= norm_a.num * norm_c.num,
+                prod.denom() > 0;
+    }
 }
 
 /// Alias for backward compatibility with code that used the RationalModel name.
