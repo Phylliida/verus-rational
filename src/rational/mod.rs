@@ -15,6 +15,7 @@ pub mod signum;
 pub mod ordering;
 pub mod division;
 pub mod applications;
+pub mod horner;
 
 verus! {
 

@@ -1270,6 +1270,68 @@ impl RuntimeRational {
         sum.mul(&half)
     }
 
+    /// Evaluate linear polynomial c₀ + c₁x using Horner's method.
+    pub fn eval_linear(c0: &Self, c1: &Self, x: &Self) -> (out: Self)
+        requires
+            c0.wf_spec(),
+            c1.wf_spec(),
+            x.wf_spec(),
+        ensures
+            out.wf_spec(),
+            out@ == c0@.add_spec(c1@.mul_spec(x@)),
+    {
+        let c1x = c1.mul(x);
+        c0.add(&c1x)
+    }
+
+    /// Evaluate quadratic c₀ + c₁x + c₂x² using Horner's method:
+    /// c₀ + x * (c₁ + x * c₂).
+    pub fn eval_quadratic(c0: &Self, c1: &Self, c2: &Self, x: &Self) -> (out: Self)
+        requires
+            c0.wf_spec(),
+            c1.wf_spec(),
+            c2.wf_spec(),
+            x.wf_spec(),
+        ensures
+            out.wf_spec(),
+            out@ == c0@.add_spec(x@.mul_spec(c1@.add_spec(x@.mul_spec(c2@)))),
+    {
+        // Inner: c1 + x * c2
+        let xc2 = x.mul(c2);
+        let inner = c1.add(&xc2);
+        // Outer: c0 + x * inner
+        let x_inner = x.mul(&inner);
+        c0.add(&x_inner)
+    }
+
+    /// Evaluate cubic c₀ + c₁x + c₂x² + c₃x³ using Horner's method:
+    /// c₀ + x * (c₁ + x * (c₂ + x * c₃)).
+    pub fn eval_cubic(
+        c0: &Self, c1: &Self, c2: &Self, c3: &Self, x: &Self,
+    ) -> (out: Self)
+        requires
+            c0.wf_spec(),
+            c1.wf_spec(),
+            c2.wf_spec(),
+            c3.wf_spec(),
+            x.wf_spec(),
+        ensures
+            out.wf_spec(),
+            out@ == c0@.add_spec(x@.mul_spec(
+                c1@.add_spec(x@.mul_spec(
+                    c2@.add_spec(x@.mul_spec(c3@)))))),
+    {
+        // Innermost: c2 + x * c3
+        let xc3 = x.mul(c3);
+        let inner2 = c2.add(&xc3);
+        // Middle: c1 + x * inner2
+        let x_inner2 = x.mul(&inner2);
+        let inner1 = c1.add(&x_inner2);
+        // Outer: c0 + x * inner1
+        let x_inner1 = x.mul(&inner1);
+        c0.add(&x_inner1)
+    }
+
     /// Optional GCD normalization: returns an equivalent rational with
     /// smaller numerator/denominator witnesses.
     ///
