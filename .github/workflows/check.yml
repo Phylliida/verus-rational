@@ -27,6 +27,13 @@ jobs:
           path: verus
           persist-credentials: false
 
+      - name: Checkout verus-bigint
+        uses: actions/checkout@v4.2.2
+        with:
+          repository: Phylliida/verus-bigint
+          path: verus-bigint
+          persist-credentials: false
+
       - name: Install required Rust toolchain
         run: |
           set -euo pipefail
