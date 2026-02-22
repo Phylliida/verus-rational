@@ -143,6 +143,44 @@ impl Rational {
         ) by (nonlinear_arith);
     }
 
+    /// Mixed transitivity: a ≤ b ∧ b < c → a < c.
+    pub proof fn lemma_le_lt_transitive(a: Self, b: Self, c: Self)
+        requires
+            a.le_spec(b),
+            b.lt_spec(c),
+        ensures
+            a.lt_spec(c),
+    {
+        Self::lemma_denom_positive(a);
+        Self::lemma_denom_positive(b);
+        Self::lemma_denom_positive(c);
+        assert(
+            (a.num * b.denom() <= b.num * a.denom()
+                && b.num * c.denom() < c.num * b.denom()
+                && a.denom() > 0 && b.denom() > 0 && c.denom() > 0)
+            ==> a.num * c.denom() < c.num * a.denom()
+        ) by (nonlinear_arith);
+    }
+
+    /// Mixed transitivity: a < b ∧ b ≤ c → a < c.
+    pub proof fn lemma_lt_le_transitive(a: Self, b: Self, c: Self)
+        requires
+            a.lt_spec(b),
+            b.le_spec(c),
+        ensures
+            a.lt_spec(c),
+    {
+        Self::lemma_denom_positive(a);
+        Self::lemma_denom_positive(b);
+        Self::lemma_denom_positive(c);
+        assert(
+            (a.num * b.denom() < b.num * a.denom()
+                && b.num * c.denom() <= c.num * b.denom()
+                && a.denom() > 0 && b.denom() > 0 && c.denom() > 0)
+            ==> a.num * c.denom() < c.num * a.denom()
+        ) by (nonlinear_arith);
+    }
+
     // ── Square non-negativity ───────────────────────────────────────
 
     /// The square of any rational is non-negative.

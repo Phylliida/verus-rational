@@ -2001,6 +2001,211 @@ impl Rational {
         }
     }
 
+    /// a > 0 → a^n > 0.
+    pub proof fn lemma_pow_positive(a: Self, n: nat)
+        requires
+            Self::from_int_spec(0).lt_spec(a),
+        ensures
+            Self::from_int_spec(0).lt_spec(a.pow_spec(n)),
+        decreases n,
+    {
+        let z = Self::from_int_spec(0);
+        if n == 0 {
+            // a^0 = from_int(1), and 0 < 1
+            Self::lemma_from_int_preserves_lt(0, 1);
+        } else {
+            // a^n = a * a^(n-1)
+            // By IH: 0 < a^(n-1)
+            Self::lemma_pow_positive(a, (n - 1) as nat);
+            // 0 < a and 0 < a^(n-1) → 0*a^(n-1) < a*a^(n-1)
+            Self::lemma_lt_mul_positive(z, a, a.pow_spec((n - 1) as nat));
+            // 0 ≡ 0*a^(n-1) → 0 ≤ 0*a^(n-1)
+            Self::lemma_mul_zero(a.pow_spec((n - 1) as nat));
+            Self::lemma_eqv_implies_le(z, z.mul_spec(a.pow_spec((n - 1) as nat)));
+            // Chain: 0 ≤ 0*a^(n-1) < a*a^(n-1) = a^n
+            Self::lemma_le_lt_transitive(z, z.mul_spec(a.pow_spec((n - 1) as nat)),
+                a.pow_spec(n));
+        }
+    }
+
+    /// a ≥ 0 → a^n ≥ 0.
+    pub proof fn lemma_pow_nonneg(a: Self, n: nat)
+        requires
+            Self::from_int_spec(0).le_spec(a),
+        ensures
+            Self::from_int_spec(0).le_spec(a.pow_spec(n)),
+        decreases n,
+    {
+        let z = Self::from_int_spec(0);
+        if n == 0 {
+            Self::lemma_from_int_preserves_le(0, 1);
+        } else {
+            // a^n = a * a^(n-1)
+            Self::lemma_pow_nonneg(a, (n - 1) as nat);
+            // 0 ≤ a and 0 ≤ a^(n-1) → 0*0 ≤ a * a^(n-1)
+            Self::lemma_le_mul_nonneg_both(z, a, z, a.pow_spec((n - 1) as nat));
+            // 0*0 ≡ 0
+            Self::lemma_mul_zero(z);
+            Self::lemma_eqv_implies_le(z, z.mul_spec(z));
+            Self::lemma_le_transitive(z, z.mul_spec(z), a.pow_spec(n));
+        }
+    }
+
+    /// a ≢ 0 → (a⁻¹)^n ≡ (a^n)⁻¹.
+    pub proof fn lemma_pow_reciprocal(a: Self, n: nat)
+        requires
+            !a.eqv_spec(Self::from_int_spec(0)),
+        ensures
+            a.reciprocal_spec().pow_spec(n).eqv_spec(
+                a.pow_spec(n).reciprocal_spec()),
+        decreases n,
+    {
+        Self::lemma_eqv_zero_iff_num_zero(a);
+        let inv = a.reciprocal_spec();
+        let one = Self::from_int_spec(1);
+        if n == 0 {
+            // (a⁻¹)^0 = 1 and (a^0)⁻¹ = 1⁻¹
+            // 1⁻¹ ≡ 1 (since 1 * 1 = 1)
+            assert(one.num == 1);
+            assert(one.denom() == 1);
+            assert(one.reciprocal_spec().num == 1);
+            assert(one.reciprocal_spec().denom() == 1);
+            Self::lemma_eqv_reflexive(one);
+        } else {
+            // (a⁻¹)^n = a⁻¹ * (a⁻¹)^(n-1)
+            // By IH: (a⁻¹)^(n-1) ≡ (a^(n-1))⁻¹
+            Self::lemma_pow_reciprocal(a, (n - 1) as nat);
+            let prev_pow = a.pow_spec((n - 1) as nat);
+            // prev_pow.num != 0 is NOT guaranteed (a^(n-1) could be 0 if
+            // a ≡ 0, but we have a ≢ 0, so a.num != 0, hence a^(n-1).num != 0).
+            // Actually, a.num != 0, so a^(n-1) has num = a.num^(n-1) which ≠ 0.
+            // We need: a^(n-1) ≢ 0
+            // From a^(n-1) = a * a^(n-2) * ... all having nonzero num:
+            // The numerator of a^k is a.num^k (by mul_spec definition), which is nonzero.
+            Self::lemma_pow_num_nonzero(a, (n - 1) as nat);
+
+            // a⁻¹ * (a⁻¹)^(n-1) ≡ a⁻¹ * (a^(n-1))⁻¹  by congruence + IH
+            Self::lemma_eqv_mul_congruence_right(
+                inv,
+                inv.pow_spec((n - 1) as nat),
+                prev_pow.reciprocal_spec(),
+            );
+            // a⁻¹ * (a^(n-1))⁻¹ ≡ (a * a^(n-1))⁻¹   by reciprocal_of_product (backward)
+            Self::lemma_reciprocal_of_product(a, prev_pow);
+            Self::lemma_eqv_symmetric(
+                a.mul_spec(prev_pow).reciprocal_spec(),
+                inv.mul_spec(prev_pow.reciprocal_spec()),
+            );
+            // Chain
+            Self::lemma_eqv_transitive(
+                inv.pow_spec(n),
+                inv.mul_spec(prev_pow.reciprocal_spec()),
+                a.mul_spec(prev_pow).reciprocal_spec(),
+            );
+            // a * a^(n-1) = a^n  structurally
+        }
+    }
+
+    /// Helper: if a.num ≠ 0 then a^n has nonzero numerator.
+    proof fn lemma_pow_num_nonzero(a: Self, n: nat)
+        requires
+            a.num != 0,
+        ensures
+            a.pow_spec(n).num != 0,
+        decreases n,
+    {
+        if n == 0 {
+            assert(a.pow_spec(0).num == 1);
+        } else {
+            Self::lemma_pow_num_nonzero(a, (n - 1) as nat);
+            let prev = a.pow_spec((n - 1) as nat);
+            assert(a.pow_spec(n).num == a.num * prev.num);
+            assert(a.num != 0 && prev.num != 0 ==> a.num * prev.num != 0)
+                by (nonlinear_arith);
+        }
+    }
+
+    /// 0 ≤ a ≤ b → a^n ≤ b^n.
+    pub proof fn lemma_pow_monotone(a: Self, b: Self, n: nat)
+        requires
+            Self::from_int_spec(0).le_spec(a),
+            a.le_spec(b),
+        ensures
+            a.pow_spec(n).le_spec(b.pow_spec(n)),
+        decreases n,
+    {
+        let z = Self::from_int_spec(0);
+        if n == 0 {
+            // a^0 = b^0 = 1, so 1 ≤ 1 by reflexivity
+            Self::lemma_eqv_reflexive(Self::from_int_spec(1));
+            Self::lemma_eqv_implies_le(Self::from_int_spec(1), Self::from_int_spec(1));
+        } else {
+            // a^n = a * a^(n-1), b^n = b * b^(n-1)
+            // By IH: a^(n-1) ≤ b^(n-1)
+            Self::lemma_pow_monotone(a, b, (n - 1) as nat);
+            // 0 ≤ a^(n-1) by pow_nonneg
+            Self::lemma_pow_nonneg(a, (n - 1) as nat);
+            // 0 ≤ a ≤ b and 0 ≤ a^(n-1) ≤ b^(n-1) → a*a^(n-1) ≤ b*b^(n-1)
+            Self::lemma_le_mul_nonneg_both(
+                a, b,
+                a.pow_spec((n - 1) as nat), b.pow_spec((n - 1) as nat),
+            );
+        }
+    }
+
+    /// 0 ≤ a < b ∧ n > 0 → a^n < b^n.
+    pub proof fn lemma_pow_strict_monotone(a: Self, b: Self, n: nat)
+        requires
+            Self::from_int_spec(0).le_spec(a),
+            a.lt_spec(b),
+            n > 0,
+        ensures
+            a.pow_spec(n).lt_spec(b.pow_spec(n)),
+        decreases n,
+    {
+        let z = Self::from_int_spec(0);
+        if n == 1 {
+            // a^1 ≡ a and b^1 ≡ b, and a < b, so a^1 < b^1.
+            Self::lemma_pow_one(a);
+            Self::lemma_pow_one(b);
+            // a^1 ≡ a → a^1 ≤ a
+            Self::lemma_eqv_symmetric(a.pow_spec(1), a);
+            Self::lemma_eqv_implies_le(a, a.pow_spec(1));
+            // b ≡ b^1 → b ≤ b^1
+            Self::lemma_eqv_implies_le(b.pow_spec(1), b);
+            // a^1 ≤ a < b → a^1 < b
+            Self::lemma_le_lt_transitive(a.pow_spec(1), a, b);
+            // a^1 < b ≤ b^1 → a^1 < b^1
+            Self::lemma_lt_le_transitive(a.pow_spec(1), b, b.pow_spec(1));
+        } else {
+            // a^n = a * a^(n-1), b^n = b * b^(n-1)
+            // By IH: a^(n-1) < b^(n-1) (since n-1 > 0)
+            Self::lemma_pow_strict_monotone(a, b, (n - 1) as nat);
+            // 0 ≤ a < b → 0 < b
+            Self::lemma_le_lt_transitive(z, a, b);
+            // 0 < b and a^(n-1) < b^(n-1) → a^(n-1)*b < b^(n-1)*b
+            Self::lemma_lt_mul_positive(
+                a.pow_spec((n - 1) as nat), b.pow_spec((n - 1) as nat), b,
+            );
+            // By commutativity: x*b == b*x structurally
+            Self::lemma_mul_commutative(b, a.pow_spec((n - 1) as nat));
+            Self::lemma_mul_commutative(b, b.pow_spec((n - 1) as nat));
+            // So: b*a^(n-1) < b*b^(n-1)
+
+            // a ≤ b and 0 ≤ a^(n-1) → a*a^(n-1) ≤ b*a^(n-1)
+            Self::lemma_pow_nonneg(a, (n - 1) as nat);
+            Self::lemma_lt_implies_le(a, b);
+            Self::lemma_le_mul_nonneg(a, b, a.pow_spec((n - 1) as nat));
+
+            // Chain: a^n = a*a^(n-1) ≤ b*a^(n-1) < b*b^(n-1) = b^n
+            Self::lemma_le_lt_transitive(
+                a.pow_spec(n),
+                b.mul_spec(a.pow_spec((n - 1) as nat)),
+                b.mul_spec(b.pow_spec((n - 1) as nat)),
+            );
+        }
+    }
+
     // ── Quadratic discriminant (item 21) ────────────────────────────
 
     /// discriminant(a, b, c) = b² - 4ac.

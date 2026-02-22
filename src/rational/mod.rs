@@ -44,6 +44,19 @@ impl Rational {
         Rational { num: value, den: 0 }
     }
 
+    /// Spec-level construction from numerator and denominator.
+    /// The sign of the denominator is moved to the numerator so the
+    /// effective denominator is always positive.
+    pub open spec fn from_frac_spec(num: int, den: int) -> Self
+        recommends den != 0,
+    {
+        if den > 0 {
+            Rational { num: num, den: (den - 1) as nat }
+        } else {
+            Rational { num: -num, den: (-den - 1) as nat }
+        }
+    }
+
     pub proof fn new(value: int) -> (s: Self)
         ensures
             s == Self::from_int_spec(value),
