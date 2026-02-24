@@ -6,39 +6,63 @@
 
 ### Spec Functions
 
-- **`open spec fn denom_nat`** — [rational/mod.rs:32](./src/rational/mod.rs#L32)
-- **`open spec fn denom`** — [rational/mod.rs:36](./src/rational/mod.rs#L36)
-- **`open spec fn as_real`** — [rational/mod.rs:40](./src/rational/mod.rs#L40)
-- **`open spec fn from_int_spec`** — [rational/mod.rs:44](./src/rational/mod.rs#L44)
-- **`open spec fn from_frac_spec`** — [rational/mod.rs:51](./src/rational/mod.rs#L51)
+- **`open spec fn denom_nat`** — [rational/mod.rs:33](./src/rational/mod.rs#L33)
+  > Effective denominator as a nat (always >= 1).
+- **`open spec fn denom`** — [rational/mod.rs:38](./src/rational/mod.rs#L38)
+  > Effective denominator as an int (always >= 1).
+- **`open spec fn as_real`** — [rational/mod.rs:43](./src/rational/mod.rs#L43)
+  > Interpretation as a real number: num / denom.
+- **`open spec fn from_int_spec`** — [rational/mod.rs:48](./src/rational/mod.rs#L48)
+  > Construct a rational from an integer (denominator = 1).
+- **`open spec fn from_frac_spec`** — [rational/mod.rs:55](./src/rational/mod.rs#L55)
   > Spec-level construction from numerator and denominator. The sign of the denominator is moved to the numerator so the effective denominator is always positive.
-- **`open spec fn add_spec`** — [rational/mod.rs:99](./src/rational/mod.rs#L99)
-- **`open spec fn neg_spec`** — [rational/mod.rs:120](./src/rational/mod.rs#L120)
-- **`open spec fn sub_spec`** — [rational/mod.rs:131](./src/rational/mod.rs#L131)
-- **`open spec fn mul_spec`** — [rational/mod.rs:143](./src/rational/mod.rs#L143)
-- **`open spec fn reciprocal_spec`** — [rational/mod.rs:162](./src/rational/mod.rs#L162)
+- **`open spec fn add_spec`** — [rational/mod.rs:109](./src/rational/mod.rs#L109)
+  > Spec-level addition: a/b + c/d = (a*d + c*b) / (b*d).
+- **`open spec fn neg_spec`** — [rational/mod.rs:132](./src/rational/mod.rs#L132)
+  > Spec-level negation: -(a/b) = (-a)/b.
+- **`open spec fn sub_spec`** — [rational/mod.rs:145](./src/rational/mod.rs#L145)
+  > Spec-level subtraction: a - b = a + (-b).
+- **`open spec fn mul_spec`** — [rational/mod.rs:159](./src/rational/mod.rs#L159)
+  > Spec-level multiplication: (a/b) * (c/d) = (a*c) / (b*d).
+- **`open spec fn reciprocal_spec`** — [rational/mod.rs:179](./src/rational/mod.rs#L179)
   > Spec-level reciprocal: flips numerator and denominator. Only meaningful when self.num != 0.
-- **`open spec fn div_spec`** — [rational/mod.rs:175](./src/rational/mod.rs#L175)
+- **`open spec fn div_spec`** — [rational/mod.rs:192](./src/rational/mod.rs#L192)
   > Division as multiplication by reciprocal: a / b := a * inv(b). Requires b.num != 0 (ensured by callers at proof level).
-- **`open spec fn signum`** — [rational/mod.rs:179](./src/rational/mod.rs#L179)
-- **`open spec fn abs_spec`** — [rational/mod.rs:189](./src/rational/mod.rs#L189)
-- **`open spec fn min_spec`** — [rational/mod.rs:197](./src/rational/mod.rs#L197)
-- **`open spec fn max_spec`** — [rational/mod.rs:205](./src/rational/mod.rs#L205)
-- **`open spec fn eqv_spec`** — [rational/mod.rs:213](./src/rational/mod.rs#L213)
-- **`open spec fn le_spec`** — [rational/mod.rs:217](./src/rational/mod.rs#L217)
-- **`open spec fn lt_spec`** — [rational/mod.rs:221](./src/rational/mod.rs#L221)
+- **`open spec fn signum`** — [rational/mod.rs:197](./src/rational/mod.rs#L197)
+  > Sign of the rational: 1, -1, or 0.
+- **`open spec fn abs_spec`** — [rational/mod.rs:208](./src/rational/mod.rs#L208)
+  > Absolute value: |a| = a if a >= 0, else -a.
+- **`open spec fn min_spec`** — [rational/mod.rs:217](./src/rational/mod.rs#L217)
+  > Minimum of two rationals.
+- **`open spec fn max_spec`** — [rational/mod.rs:226](./src/rational/mod.rs#L226)
+  > Maximum of two rationals.
+- **`open spec fn eqv_spec`** — [rational/mod.rs:235](./src/rational/mod.rs#L235)
+  > Semantic equality via cross-multiplication: a/b ≡ c/d iff a*d == c*b.
+- **`open spec fn le_spec`** — [rational/mod.rs:240](./src/rational/mod.rs#L240)
+  > Less-than-or-equal via cross-multiplication.
+- **`open spec fn lt_spec`** — [rational/mod.rs:245](./src/rational/mod.rs#L245)
+  > Strict less-than via cross-multiplication.
 
 ### Proof Functions
 
-- **`proof fn new`** — [rational/mod.rs:61](./src/rational/mod.rs#L61)
-- **`proof fn from_int`** — [rational/mod.rs:68](./src/rational/mod.rs#L68)
-- **`proof fn from_frac`** — [rational/mod.rs:75](./src/rational/mod.rs#L75)
-- **`proof fn zero`** — [rational/mod.rs:85](./src/rational/mod.rs#L85)
-- **`proof fn one`** — [rational/mod.rs:92](./src/rational/mod.rs#L92)
-- **`proof fn add`** — [rational/mod.rs:108](./src/rational/mod.rs#L108)
-- **`proof fn neg`** — [rational/mod.rs:124](./src/rational/mod.rs#L124)
-- **`proof fn sub`** — [rational/mod.rs:135](./src/rational/mod.rs#L135)
-- **`proof fn mul`** — [rational/mod.rs:150](./src/rational/mod.rs#L150)
+- **`proof fn new`** — [rational/mod.rs:66](./src/rational/mod.rs#L66)
+  > Construct a rational from an integer.
+- **`proof fn from_int`** — [rational/mod.rs:74](./src/rational/mod.rs#L74)
+  > Construct a rational from an integer (alias for `new`).
+- **`proof fn from_frac`** — [rational/mod.rs:82](./src/rational/mod.rs#L82)
+  > Construct a rational from a numerator and positive denominator.
+- **`proof fn zero`** — [rational/mod.rs:93](./src/rational/mod.rs#L93)
+  > Construct the rational number 0.
+- **`proof fn one`** — [rational/mod.rs:101](./src/rational/mod.rs#L101)
+  > Construct the rational number 1.
+- **`proof fn add`** — [rational/mod.rs:119](./src/rational/mod.rs#L119)
+  > Proof-level addition of two rationals.
+- **`proof fn neg`** — [rational/mod.rs:137](./src/rational/mod.rs#L137)
+  > Proof-level negation of a rational.
+- **`proof fn sub`** — [rational/mod.rs:150](./src/rational/mod.rs#L150)
+  > Proof-level subtraction of two rationals.
+- **`proof fn mul`** — [rational/mod.rs:167](./src/rational/mod.rs#L167)
+  > Proof-level multiplication of two rationals.
 
 ## `rational::applications`
 
@@ -197,45 +221,60 @@
 
 ### Spec Functions
 
-- **`open spec fn canonical_sign_spec`** — [rational/equivalence.rs:168](./src/rational/equivalence.rs#L168)
+- **`open spec fn canonical_sign_spec`** — [rational/equivalence.rs:174](./src/rational/equivalence.rs#L174)
   > Canonical sign placement for rationals: denominator positive, and zero has denominator `1`.
 
 ### Proof Functions
 
-- **`proof fn lemma_normalized_eqv_implies_equal_denom`** — [rational/equivalence.rs:84](./src/rational/equivalence.rs#L84)
-- **`proof fn lemma_eqv_and_equal_denom_implies_equal_num`** — [rational/equivalence.rs:103](./src/rational/equivalence.rs#L103)
-- **`proof fn lemma_normalized_eqv_implies_equal`** — [rational/equivalence.rs:129](./src/rational/equivalence.rs#L129)
+- **`proof fn lemma_normalized_eqv_implies_equal_denom`** — [rational/equivalence.rs:89](./src/rational/equivalence.rs#L89)
+  > Two normalized equivalents have equal denominators.
+- **`proof fn lemma_eqv_and_equal_denom_implies_equal_num`** — [rational/equivalence.rs:109](./src/rational/equivalence.rs#L109)
+  > a ≡ b with equal denominators implies equal numerators.
+- **`proof fn lemma_normalized_eqv_implies_equal`** — [rational/equivalence.rs:135](./src/rational/equivalence.rs#L135)
   > Strongest normalization bridge currently available: normalized semantic-equality implies structural equality.
-- **`proof fn lemma_normalized_zero_has_unit_denom`** — [rational/equivalence.rs:147](./src/rational/equivalence.rs#L147)
+- **`proof fn lemma_normalized_zero_has_unit_denom`** — [rational/equivalence.rs:153](./src/rational/equivalence.rs#L153)
   > Normalized values use canonical zero representation.
 
 ## `rational::equivalence::Rational`
 
 ### Spec Functions
 
-- **`open spec fn normalized_spec`** — [rational/equivalence.rs:67](./src/rational/equivalence.rs#L67)
+- **`open spec fn normalized_spec`** — [rational/equivalence.rs:70](./src/rational/equivalence.rs#L70)
   > Canonical normalization predicate for the model: among semantically-equivalent representations, this value has a minimal denominator.
 
 ### Proof Functions
 
-- **`proof fn lemma_eqv_reflexive`** — [rational/equivalence.rs:13](./src/rational/equivalence.rs#L13)
-- **`proof fn lemma_eqv_symmetric`** — [rational/equivalence.rs:20](./src/rational/equivalence.rs#L20)
-- **`proof fn lemma_eqv_transitive`** — [rational/equivalence.rs:28](./src/rational/equivalence.rs#L28)
-- **`proof fn lemma_from_int_is_normalized`** — [rational/equivalence.rs:71](./src/rational/equivalence.rs#L71)
+- **`proof fn lemma_eqv_reflexive`** — [rational/equivalence.rs:14](./src/rational/equivalence.rs#L14)
+  > a ≡ a.
+- **`proof fn lemma_eqv_symmetric`** — [rational/equivalence.rs:22](./src/rational/equivalence.rs#L22)
+  > a ≡ b ↔ b ≡ a.
+- **`proof fn lemma_eqv_transitive`** — [rational/equivalence.rs:31](./src/rational/equivalence.rs#L31)
+  > a ≡ b ∧ b ≡ c → a ≡ c.
+- **`proof fn lemma_from_int_is_normalized`** — [rational/equivalence.rs:75](./src/rational/equivalence.rs#L75)
+  > from_int(v) is normalized (denominator 1 is minimal).
 
 ## `rational::foundation::Rational`
 
 ### Proof Functions
 
-- **`proof fn lemma_nat_mul_cast`** — [rational/foundation.rs:8](./src/rational/foundation.rs#L8)
-- **`proof fn lemma_denom_positive`** — [rational/foundation.rs:15](./src/rational/foundation.rs#L15)
-- **`proof fn lemma_eqv_zero_iff_num_zero`** — [rational/foundation.rs:25](./src/rational/foundation.rs#L25)
-- **`proof fn lemma_add_denom_product`** — [rational/foundation.rs:40](./src/rational/foundation.rs#L40)
-- **`proof fn lemma_add_denom_product_int`** — [rational/foundation.rs:54](./src/rational/foundation.rs#L54)
-- **`proof fn lemma_mul_denom_product`** — [rational/foundation.rs:72](./src/rational/foundation.rs#L72)
-- **`proof fn lemma_mul_denom_product_int`** — [rational/foundation.rs:86](./src/rational/foundation.rs#L86)
-- **`proof fn lemma_sub_denom_product`** — [rational/foundation.rs:104](./src/rational/foundation.rs#L104)
-- **`proof fn lemma_sub_denom_product_int`** — [rational/foundation.rs:116](./src/rational/foundation.rs#L116)
+- **`proof fn lemma_nat_mul_cast`** — [rational/foundation.rs:9](./src/rational/foundation.rs#L9)
+  > (a * b) as int == (a as int) * (b as int) for nats.
+- **`proof fn lemma_denom_positive`** — [rational/foundation.rs:17](./src/rational/foundation.rs#L17)
+  > The denominator is always positive.
+- **`proof fn lemma_eqv_zero_iff_num_zero`** — [rational/foundation.rs:28](./src/rational/foundation.rs#L28)
+  > a ≡ 0 ↔ a.num == 0.
+- **`proof fn lemma_add_denom_product`** — [rational/foundation.rs:44](./src/rational/foundation.rs#L44)
+  > denom(a + b) == denom(a) * denom(b) (nat version).
+- **`proof fn lemma_add_denom_product_int`** — [rational/foundation.rs:59](./src/rational/foundation.rs#L59)
+  > denom(a + b) == denom(a) * denom(b) (int version).
+- **`proof fn lemma_mul_denom_product`** — [rational/foundation.rs:78](./src/rational/foundation.rs#L78)
+  > denom(a * b) == denom(a) * denom(b) (nat version).
+- **`proof fn lemma_mul_denom_product_int`** — [rational/foundation.rs:93](./src/rational/foundation.rs#L93)
+  > denom(a * b) == denom(a) * denom(b) (int version).
+- **`proof fn lemma_sub_denom_product`** — [rational/foundation.rs:112](./src/rational/foundation.rs#L112)
+  > denom(a - b) == denom(a) * denom(b) (nat version).
+- **`proof fn lemma_sub_denom_product_int`** — [rational/foundation.rs:125](./src/rational/foundation.rs#L125)
+  > denom(a - b) == denom(a) * denom(b) (int version).
 
 ## `rational::horner::Rational`
 
@@ -362,56 +401,101 @@
 
 ### Proof Functions
 
-- **`proof fn lemma_mul_commutative`** — [rational/ring_algebra.rs:13](./src/rational/ring_algebra.rs#L13)
-- **`proof fn lemma_sub_is_add_neg`** — [rational/ring_algebra.rs:30](./src/rational/ring_algebra.rs#L30)
-- **`proof fn lemma_neg_involution`** — [rational/ring_algebra.rs:37](./src/rational/ring_algebra.rs#L37)
-- **`proof fn lemma_add_commutative`** — [rational/ring_algebra.rs:49](./src/rational/ring_algebra.rs#L49)
-- **`proof fn lemma_add_associative`** — [rational/ring_algebra.rs:87](./src/rational/ring_algebra.rs#L87)
-- **`proof fn lemma_add_rearrange_2x2`** — [rational/ring_algebra.rs:144](./src/rational/ring_algebra.rs#L144)
-- **`proof fn lemma_neg_add`** — [rational/ring_algebra.rs:211](./src/rational/ring_algebra.rs#L211)
-- **`proof fn lemma_sub_add_distributes`** — [rational/ring_algebra.rs:235](./src/rational/ring_algebra.rs#L235)
-- **`proof fn lemma_sub_mul_right`** — [rational/ring_algebra.rs:298](./src/rational/ring_algebra.rs#L298)
-- **`proof fn lemma_add_zero_identity`** — [rational/ring_algebra.rs:335](./src/rational/ring_algebra.rs#L335)
-- **`proof fn lemma_add_inverse`** — [rational/ring_algebra.rs:374](./src/rational/ring_algebra.rs#L374)
-- **`proof fn lemma_mul_one_identity`** — [rational/ring_algebra.rs:458](./src/rational/ring_algebra.rs#L458)
-- **`proof fn lemma_mul_associative`** — [rational/ring_algebra.rs:493](./src/rational/ring_algebra.rs#L493)
-- **`proof fn lemma_mul_zero`** — [rational/ring_algebra.rs:537](./src/rational/ring_algebra.rs#L537)
-- **`proof fn lemma_mul_distributes_over_add`** — [rational/ring_algebra.rs:556](./src/rational/ring_algebra.rs#L556)
-- **`proof fn lemma_mul_zero_implies_factor_zero`** — [rational/ring_algebra.rs:564](./src/rational/ring_algebra.rs#L564)
-- **`proof fn lemma_mul_reciprocal_positive_num`** — [rational/ring_algebra.rs:576](./src/rational/ring_algebra.rs#L576)
-- **`proof fn reciprocal_constructive`** — [rational/ring_algebra.rs:627](./src/rational/ring_algebra.rs#L627)
-- **`proof fn lemma_le_add_monotone_strong`** — [rational/ring_algebra.rs:686](./src/rational/ring_algebra.rs#L686)
-- **`proof fn lemma_le_add_monotone`** — [rational/ring_algebra.rs:715](./src/rational/ring_algebra.rs#L715)
-- **`proof fn lemma_le_mul_monotone_nonnegative_strong`** — [rational/ring_algebra.rs:725](./src/rational/ring_algebra.rs#L725)
-- **`proof fn lemma_le_mul_monotone_nonnegative`** — [rational/ring_algebra.rs:765](./src/rational/ring_algebra.rs#L765)
-- **`proof fn lemma_add_right_cancel_strong`** — [rational/ring_algebra.rs:776](./src/rational/ring_algebra.rs#L776)
-- **`proof fn lemma_add_right_cancel`** — [rational/ring_algebra.rs:833](./src/rational/ring_algebra.rs#L833)
-- **`proof fn lemma_add_left_cancel_strong`** — [rational/ring_algebra.rs:843](./src/rational/ring_algebra.rs#L843)
-- **`proof fn lemma_add_left_cancel`** — [rational/ring_algebra.rs:869](./src/rational/ring_algebra.rs#L869)
-- **`proof fn lemma_add_then_sub_cancel`** — [rational/ring_algebra.rs:879](./src/rational/ring_algebra.rs#L879)
-- **`proof fn lemma_sub_then_add_cancel`** — [rational/ring_algebra.rs:918](./src/rational/ring_algebra.rs#L918)
-- **`proof fn lemma_sub_eqv_zero_iff_eqv`** — [rational/ring_algebra.rs:976](./src/rational/ring_algebra.rs#L976)
-- **`proof fn lemma_sub_antisymmetric`** — [rational/ring_algebra.rs:1017](./src/rational/ring_algebra.rs#L1017)
-- **`proof fn lemma_mul_neg_right`** — [rational/ring_algebra.rs:1038](./src/rational/ring_algebra.rs#L1038)
-- **`proof fn lemma_sub_neg_both`** — [rational/ring_algebra.rs:1058](./src/rational/ring_algebra.rs#L1058)
-- **`proof fn lemma_sub_self_zero_num`** — [rational/ring_algebra.rs:1105](./src/rational/ring_algebra.rs#L1105)
-- **`proof fn lemma_sub_self_zero_signum`** — [rational/ring_algebra.rs:1118](./src/rational/ring_algebra.rs#L1118)
-- **`proof fn lemma_mul_left_zero_num`** — [rational/ring_algebra.rs:1130](./src/rational/ring_algebra.rs#L1130)
-- **`proof fn lemma_mul_right_zero_num`** — [rational/ring_algebra.rs:1153](./src/rational/ring_algebra.rs#L1153)
-- **`proof fn lemma_sub_both_zero_num`** — [rational/ring_algebra.rs:1176](./src/rational/ring_algebra.rs#L1176)
+- **`proof fn lemma_mul_commutative`** — [rational/ring_algebra.rs:14](./src/rational/ring_algebra.rs#L14)
+  > a * b == b * a (structural equality).
+- **`proof fn lemma_sub_is_add_neg`** — [rational/ring_algebra.rs:32](./src/rational/ring_algebra.rs#L32)
+  > a - b == a + (-b) (structural equality).
+- **`proof fn lemma_neg_involution`** — [rational/ring_algebra.rs:40](./src/rational/ring_algebra.rs#L40)
+  > -(-a) == a (structural equality).
+- **`proof fn lemma_add_commutative`** — [rational/ring_algebra.rs:53](./src/rational/ring_algebra.rs#L53)
+  > a + b ≡ b + a.
+- **`proof fn lemma_add_associative`** — [rational/ring_algebra.rs:92](./src/rational/ring_algebra.rs#L92)
+  > (a + b) + c ≡ a + (b + c).
+- **`proof fn lemma_add_rearrange_2x2`** — [rational/ring_algebra.rs:150](./src/rational/ring_algebra.rs#L150)
+  > (a + b) + (c + d) ≡ (a + c) + (b + d).
+- **`proof fn lemma_neg_add`** — [rational/ring_algebra.rs:218](./src/rational/ring_algebra.rs#L218)
+  > -(a + b) == (-a) + (-b) (structural equality).
+- **`proof fn lemma_sub_add_distributes`** — [rational/ring_algebra.rs:243](./src/rational/ring_algebra.rs#L243)
+  > (a + b) - (c + d) ≡ (a - c) + (b - d).
+- **`proof fn lemma_sub_mul_right`** — [rational/ring_algebra.rs:307](./src/rational/ring_algebra.rs#L307)
+  > (a - b) * k ≡ a*k - b*k.
+- **`proof fn lemma_add_zero_identity`** — [rational/ring_algebra.rs:345](./src/rational/ring_algebra.rs#L345)
+  > a + 0 == a and 0 + a == a (structural equality).
+- **`proof fn lemma_add_inverse`** — [rational/ring_algebra.rs:385](./src/rational/ring_algebra.rs#L385)
+  > a + (-a) ≡ 0 and (-a) + a ≡ 0.
+- **`proof fn lemma_mul_one_identity`** — [rational/ring_algebra.rs:470](./src/rational/ring_algebra.rs#L470)
+  > a * 1 == a and 1 * a == a (structural equality).
+- **`proof fn lemma_mul_associative`** — [rational/ring_algebra.rs:506](./src/rational/ring_algebra.rs#L506)
+  > (a * b) * c ≡ a * (b * c).
+- **`proof fn lemma_mul_zero`** — [rational/ring_algebra.rs:551](./src/rational/ring_algebra.rs#L551)
+  > a * 0 ≡ 0 and 0 * a ≡ 0.
+- **`proof fn lemma_mul_distributes_over_add`** — [rational/ring_algebra.rs:571](./src/rational/ring_algebra.rs#L571)
+  > a * (b + c) ≡ a*b + a*c.
+- **`proof fn lemma_mul_zero_implies_factor_zero`** — [rational/ring_algebra.rs:580](./src/rational/ring_algebra.rs#L580)
+  > (a * b).num == 0 → a.num == 0 or b.num == 0.
+- **`proof fn lemma_mul_reciprocal_positive_num`** — [rational/ring_algebra.rs:593](./src/rational/ring_algebra.rs#L593)
+  > a > 0 → a * a⁻¹ ≡ 1.
+- **`proof fn reciprocal_constructive`** — [rational/ring_algebra.rs:645](./src/rational/ring_algebra.rs#L645)
+  > a ≢ 0 → returns inv with a * inv ≡ 1 and inv == a.reciprocal_spec().
+- **`proof fn lemma_le_add_monotone_strong`** — [rational/ring_algebra.rs:705](./src/rational/ring_algebra.rs#L705)
+  > a ≤ b → a + c ≤ b + c.
+- **`proof fn lemma_le_add_monotone`** — [rational/ring_algebra.rs:735](./src/rational/ring_algebra.rs#L735)
+  > a ≤ b → a + c ≤ b + c (convenience wrapper).
+- **`proof fn lemma_le_mul_monotone_nonnegative_strong`** — [rational/ring_algebra.rs:746](./src/rational/ring_algebra.rs#L746)
+  > a ≤ b ∧ 0 ≤ c → a*c ≤ b*c.
+- **`proof fn lemma_le_mul_monotone_nonnegative`** — [rational/ring_algebra.rs:787](./src/rational/ring_algebra.rs#L787)
+  > a ≤ b ∧ 0 ≤ c → a*c ≤ b*c (convenience wrapper).
+- **`proof fn lemma_add_right_cancel_strong`** — [rational/ring_algebra.rs:799](./src/rational/ring_algebra.rs#L799)
+  > a + k ≡ b + k → a ≡ b.
+- **`proof fn lemma_add_right_cancel`** — [rational/ring_algebra.rs:857](./src/rational/ring_algebra.rs#L857)
+  > a + k ≡ b + k → a ≡ b (convenience wrapper).
+- **`proof fn lemma_add_left_cancel_strong`** — [rational/ring_algebra.rs:868](./src/rational/ring_algebra.rs#L868)
+  > k + a ≡ k + b → a ≡ b.
+- **`proof fn lemma_add_left_cancel`** — [rational/ring_algebra.rs:895](./src/rational/ring_algebra.rs#L895)
+  > k + a ≡ k + b → a ≡ b (convenience wrapper).
+- **`proof fn lemma_add_then_sub_cancel`** — [rational/ring_algebra.rs:906](./src/rational/ring_algebra.rs#L906)
+  > (a + b) - a ≡ b.
+- **`proof fn lemma_sub_then_add_cancel`** — [rational/ring_algebra.rs:946](./src/rational/ring_algebra.rs#L946)
+  > b + (a - b) ≡ a.
+- **`proof fn lemma_sub_eqv_zero_iff_eqv`** — [rational/ring_algebra.rs:1005](./src/rational/ring_algebra.rs#L1005)
+  > a - b ≡ 0 ↔ a ≡ b.
+- **`proof fn lemma_sub_antisymmetric`** — [rational/ring_algebra.rs:1047](./src/rational/ring_algebra.rs#L1047)
+  > a - b == -(b - a) (structural equality).
+- **`proof fn lemma_mul_neg_right`** — [rational/ring_algebra.rs:1069](./src/rational/ring_algebra.rs#L1069)
+  > a * (-b) == -(a * b) (structural equality).
+- **`proof fn lemma_sub_neg_both`** — [rational/ring_algebra.rs:1090](./src/rational/ring_algebra.rs#L1090)
+  > (-a) - (-b) == -(a - b) (structural equality).
+- **`proof fn lemma_sub_self_zero_num`** — [rational/ring_algebra.rs:1138](./src/rational/ring_algebra.rs#L1138)
+  > (a - a).num == 0.
+- **`proof fn lemma_sub_self_zero_signum`** — [rational/ring_algebra.rs:1152](./src/rational/ring_algebra.rs#L1152)
+  > signum(a - a) == 0.
+- **`proof fn lemma_mul_left_zero_num`** — [rational/ring_algebra.rs:1165](./src/rational/ring_algebra.rs#L1165)
+  > a.num == 0 → (a * b).num == 0.
+- **`proof fn lemma_mul_right_zero_num`** — [rational/ring_algebra.rs:1189](./src/rational/ring_algebra.rs#L1189)
+  > b.num == 0 → (a * b).num == 0.
+- **`proof fn lemma_sub_both_zero_num`** — [rational/ring_algebra.rs:1213](./src/rational/ring_algebra.rs#L1213)
+  > a.num == 0 ∧ b.num == 0 → (a - b).num == 0.
 
 ## `rational::signum::Rational`
 
 ### Proof Functions
 
-- **`proof fn lemma_eqv_signum`** — [rational/signum.rs:14](./src/rational/signum.rs#L14)
-- **`proof fn lemma_signum_positive_iff`** — [rational/signum.rs:65](./src/rational/signum.rs#L65)
-- **`proof fn lemma_signum_neg`** — [rational/signum.rs:76](./src/rational/signum.rs#L76)
-- **`proof fn lemma_signum_negate`** — [rational/signum.rs:84](./src/rational/signum.rs#L84)
-- **`proof fn lemma_signum_negative_iff`** — [rational/signum.rs:124](./src/rational/signum.rs#L124)
-- **`proof fn lemma_signum_zero_iff`** — [rational/signum.rs:135](./src/rational/signum.rs#L135)
-- **`proof fn lemma_signum_cases`** — [rational/signum.rs:146](./src/rational/signum.rs#L146)
-- **`proof fn lemma_signum_mul`** — [rational/signum.rs:159](./src/rational/signum.rs#L159)
+- **`proof fn lemma_eqv_signum`** — [rational/signum.rs:15](./src/rational/signum.rs#L15)
+  > a ≡ b → signum(a) == signum(b).
+- **`proof fn lemma_signum_positive_iff`** — [rational/signum.rs:67](./src/rational/signum.rs#L67)
+  > signum(a) == 1 ↔ a.num > 0.
+- **`proof fn lemma_signum_neg`** — [rational/signum.rs:79](./src/rational/signum.rs#L79)
+  > (-a).num == -a.num.
+- **`proof fn lemma_signum_negate`** — [rational/signum.rs:88](./src/rational/signum.rs#L88)
+  > signum(-a) == -signum(a).
+- **`proof fn lemma_signum_negative_iff`** — [rational/signum.rs:129](./src/rational/signum.rs#L129)
+  > signum(a) == -1 ↔ a.num < 0.
+- **`proof fn lemma_signum_zero_iff`** — [rational/signum.rs:141](./src/rational/signum.rs#L141)
+  > signum(a) == 0 ↔ a.num == 0.
+- **`proof fn lemma_signum_cases`** — [rational/signum.rs:153](./src/rational/signum.rs#L153)
+  > signum(a) is always 1, -1, or 0.
+- **`proof fn lemma_signum_mul`** — [rational/signum.rs:167](./src/rational/signum.rs#L167)
+  > signum(a * b) == signum(a) * signum(b).
 
 ## `runtime_rational`
 
