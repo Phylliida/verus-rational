@@ -10,6 +10,7 @@ use vstd::arithmetic::mul::{
 verus! {
 
 impl Rational {
+    /// a ≡ a.
     pub proof fn lemma_eqv_reflexive(a: Self)
         ensures
             a.eqv_spec(a),
@@ -17,6 +18,7 @@ impl Rational {
         assert(a.num * a.denom() == a.num * a.denom());
     }
 
+    /// a ≡ b ↔ b ≡ a.
     pub proof fn lemma_eqv_symmetric(a: Self, b: Self)
         ensures
             a.eqv_spec(b) == b.eqv_spec(a),
@@ -25,6 +27,7 @@ impl Rational {
         assert(b.eqv_spec(a) == (b.num * a.denom() == a.num * b.denom()));
     }
 
+    /// a ≡ b ∧ b ≡ c → a ≡ c.
     pub proof fn lemma_eqv_transitive(a: Self, b: Self, c: Self)
         requires
             a.eqv_spec(b),
@@ -68,6 +71,7 @@ impl Rational {
         forall|other: Self| #[trigger] self.eqv_spec(other) ==> self.denom_nat() <= other.denom_nat()
     }
 
+    /// from_int(v) is normalized (denominator 1 is minimal).
     pub proof fn lemma_from_int_is_normalized(value: int)
         ensures
             Self::from_int_spec(value).normalized_spec(),
@@ -81,6 +85,7 @@ impl Rational {
         };
     }
 
+    /// Two normalized equivalents have equal denominators.
     pub proof fn lemma_normalized_eqv_implies_equal_denom(a: Self, b: Self)
         requires
             a.normalized_spec(),
@@ -100,6 +105,7 @@ impl Rational {
         assert(a.denom_nat() == b.denom_nat());
     }
 
+    /// a ≡ b with equal denominators implies equal numerators.
     pub proof fn lemma_eqv_and_equal_denom_implies_equal_num(a: Self, b: Self)
         requires
             a.eqv_spec(b),

@@ -29,18 +29,22 @@ pub struct Rational {
 }
 
 impl Rational {
+    /// Effective denominator as a nat (always >= 1).
     pub open spec fn denom_nat(self) -> nat {
         self.den + 1
     }
 
+    /// Effective denominator as an int (always >= 1).
     pub open spec fn denom(self) -> int {
         self.denom_nat() as int
     }
 
+    /// Interpretation as a real number: num / denom.
     pub open spec fn as_real(self) -> real {
         self.num as real / self.denom_nat() as real
     }
 
+    /// Construct a rational from an integer (denominator = 1).
     pub open spec fn from_int_spec(value: int) -> Self {
         Rational { num: value, den: 0 }
     }
@@ -58,6 +62,7 @@ impl Rational {
         }
     }
 
+    /// Construct a rational from an integer.
     pub proof fn new(value: int) -> (s: Self)
         ensures
             s == Self::from_int_spec(value),
@@ -65,6 +70,7 @@ impl Rational {
         Rational { num: value, den: 0 }
     }
 
+    /// Construct a rational from an integer (alias for `new`).
     pub proof fn from_int(value: int) -> (s: Self)
         ensures
             s == Self::from_int_spec(value),
@@ -72,6 +78,7 @@ impl Rational {
         Self::new(value)
     }
 
+    /// Construct a rational from a numerator and positive denominator.
     pub proof fn from_frac(num: int, den: nat) -> (s: Self)
         requires
             den > 0,
@@ -82,6 +89,7 @@ impl Rational {
         Rational { num, den: dm1 }
     }
 
+    /// Construct the rational number 0.
     pub proof fn zero() -> (s: Self)
         ensures
             s == Self::from_int_spec(0),
@@ -89,6 +97,7 @@ impl Rational {
         Rational { num: 0, den: 0 }
     }
 
+    /// Construct the rational number 1.
     pub proof fn one() -> (s: Self)
         ensures
             s == Self::from_int_spec(1),
@@ -96,6 +105,7 @@ impl Rational {
         Rational { num: 1, den: 0 }
     }
 
+    /// Spec-level addition: a/b + c/d = (a*d + c*b) / (b*d).
     pub open spec fn add_spec(self, rhs: Self) -> Self {
         let d1 = self.denom_nat();
         let d2 = rhs.denom_nat();
@@ -105,6 +115,7 @@ impl Rational {
         }
     }
 
+    /// Proof-level addition of two rationals.
     pub proof fn add(self, rhs: Self) -> (out: Self)
         ensures
             out == self.add_spec(rhs),
@@ -117,10 +128,12 @@ impl Rational {
         }
     }
 
+    /// Spec-level negation: -(a/b) = (-a)/b.
     pub open spec fn neg_spec(self) -> Self {
         Rational { num: -self.num, den: self.den }
     }
 
+    /// Proof-level negation of a rational.
     pub proof fn neg(self) -> (out: Self)
         ensures
             out == self.neg_spec(),
@@ -128,10 +141,12 @@ impl Rational {
         Rational { num: -self.num, den: self.den }
     }
 
+    /// Spec-level subtraction: a - b = a + (-b).
     pub open spec fn sub_spec(self, rhs: Self) -> Self {
         self.add_spec(rhs.neg_spec())
     }
 
+    /// Proof-level subtraction of two rationals.
     pub proof fn sub(self, rhs: Self) -> (out: Self)
         ensures
             out == self.sub_spec(rhs),
@@ -140,6 +155,7 @@ impl Rational {
         self.add(neg_rhs)
     }
 
+    /// Spec-level multiplication: (a/b) * (c/d) = (a*c) / (b*d).
     pub open spec fn mul_spec(self, rhs: Self) -> Self {
         Rational {
             num: self.num * rhs.num,
@@ -147,6 +163,7 @@ impl Rational {
         }
     }
 
+    /// Proof-level multiplication of two rationals.
     pub proof fn mul(self, rhs: Self) -> (out: Self)
         ensures
             out == self.mul_spec(rhs),
@@ -176,6 +193,7 @@ impl Rational {
         self.mul_spec(rhs.reciprocal_spec())
     }
 
+    /// Sign of the rational: 1, -1, or 0.
     pub open spec fn signum(self) -> int {
         if self.num > 0 {
             1
@@ -186,6 +204,7 @@ impl Rational {
         }
     }
 
+    /// Absolute value: |a| = a if a >= 0, else -a.
     pub open spec fn abs_spec(self) -> Self {
         if self.num >= 0 {
             self
@@ -194,6 +213,7 @@ impl Rational {
         }
     }
 
+    /// Minimum of two rationals.
     pub open spec fn min_spec(self, rhs: Self) -> Self {
         if self.le_spec(rhs) {
             self
@@ -202,6 +222,7 @@ impl Rational {
         }
     }
 
+    /// Maximum of two rationals.
     pub open spec fn max_spec(self, rhs: Self) -> Self {
         if self.le_spec(rhs) {
             rhs
@@ -210,14 +231,17 @@ impl Rational {
         }
     }
 
+    /// Semantic equality via cross-multiplication: a/b ≡ c/d iff a*d == c*b.
     pub open spec fn eqv_spec(self, rhs: Self) -> bool {
         self.num * rhs.denom() == rhs.num * self.denom()
     }
 
+    /// Less-than-or-equal via cross-multiplication.
     pub open spec fn le_spec(self, rhs: Self) -> bool {
         self.num * rhs.denom() <= rhs.num * self.denom()
     }
 
+    /// Strict less-than via cross-multiplication.
     pub open spec fn lt_spec(self, rhs: Self) -> bool {
         self.num * rhs.denom() < rhs.num * self.denom()
     }
