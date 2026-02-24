@@ -5,6 +5,7 @@ use vstd::arithmetic::mul::lemma_mul_by_zero_is_zero;
 verus! {
 
 impl Rational {
+    /// (a * b) as int == (a as int) * (b as int) for nats.
     pub proof fn lemma_nat_mul_cast(a: nat, b: nat)
         ensures
             (a * b) as int == (a as int) * (b as int),
@@ -12,6 +13,7 @@ impl Rational {
         assert((a * b) as int == (a as int) * (b as int)) by (nonlinear_arith);
     }
 
+    /// The denominator is always positive.
     pub proof fn lemma_denom_positive(a: Self)
         ensures
             a.denom_nat() > 0,
@@ -22,6 +24,7 @@ impl Rational {
         assert(a.denom() > 0);
     }
 
+    /// a ≡ 0 ↔ a.num == 0.
     pub proof fn lemma_eqv_zero_iff_num_zero(a: Self)
         ensures
             a.eqv_spec(Self::from_int_spec(0)) == (a.num == 0),
@@ -37,6 +40,7 @@ impl Rational {
         assert((a.num * 1 == 0) == (a.num == 0)) by (nonlinear_arith);
     }
 
+    /// denom(a + b) == denom(a) * denom(b) (nat version).
     pub proof fn lemma_add_denom_product(a: Self, b: Self)
         ensures
             a.add_spec(b).denom_nat() == a.denom_nat() * b.denom_nat(),
@@ -51,6 +55,7 @@ impl Rational {
             by (nonlinear_arith);
     }
 
+    /// denom(a + b) == denom(a) * denom(b) (int version).
     pub proof fn lemma_add_denom_product_int(a: Self, b: Self)
         ensures
             a.add_spec(b).denom() == a.denom() * b.denom(),
@@ -69,6 +74,7 @@ impl Rational {
         assert(out.denom() == a.denom() * b.denom());
     }
 
+    /// denom(a * b) == denom(a) * denom(b) (nat version).
     pub proof fn lemma_mul_denom_product(a: Self, b: Self)
         ensures
             a.mul_spec(b).denom_nat() == a.denom_nat() * b.denom_nat(),
@@ -83,6 +89,7 @@ impl Rational {
             by (nonlinear_arith);
     }
 
+    /// denom(a * b) == denom(a) * denom(b) (int version).
     pub proof fn lemma_mul_denom_product_int(a: Self, b: Self)
         ensures
             a.mul_spec(b).denom() == a.denom() * b.denom(),
@@ -101,6 +108,7 @@ impl Rational {
         assert(out.denom() == a.denom() * b.denom());
     }
 
+    /// denom(a - b) == denom(a) * denom(b) (nat version).
     pub proof fn lemma_sub_denom_product(a: Self, b: Self)
         ensures
             a.sub_spec(b).denom_nat() == a.denom_nat() * b.denom_nat(),
@@ -113,6 +121,7 @@ impl Rational {
         assert(s.denom_nat() == a.denom_nat() * b.denom_nat());
     }
 
+    /// denom(a - b) == denom(a) * denom(b) (int version).
     pub proof fn lemma_sub_denom_product_int(a: Self, b: Self)
         ensures
             a.sub_spec(b).denom() == a.denom() * b.denom(),
