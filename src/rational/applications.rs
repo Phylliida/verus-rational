@@ -3093,6 +3093,319 @@ impl Rational {
                 prod.denom() > 0;
     }
 
+    /// Helper: norm.num == v1² + v2² + v3² given rational add/mul structure.
+    proof fn lemma_norm_num_sum_squares_3d(
+        norm_num: int, ab_num: int, ab_D: int,
+        xn: int, yn: int, zn: int,
+        dx: int, dy: int, dz: int,
+    )
+        requires
+            norm_num == ab_num * (dz * dz) + (zn * zn) * ab_D,
+            ab_num == (xn * xn) * (dy * dy) + (yn * yn) * (dx * dx),
+            ab_D == (dx * dx) * (dy * dy),
+        ensures
+            norm_num == (xn * dy * dz) * (xn * dy * dz)
+                + (yn * dx * dz) * (yn * dx * dz)
+                + (zn * dx * dy) * (zn * dx * dy),
+    {
+        let ghost v1 = xn * dy * dz;
+        let ghost v2 = yn * dx * dz;
+        let ghost v3 = zn * dx * dy;
+
+        let ghost t1 = ((xn * xn) * (dy * dy)) * (dz * dz);
+        let ghost t2 = ((yn * yn) * (dx * dx)) * (dz * dz);
+        let ghost t3 = (zn * zn) * ((dx * dx) * (dy * dy));
+        assert(t1 == v1 * v1) by (nonlinear_arith)
+            requires t1 == ((xn * xn) * (dy * dy)) * (dz * dz),
+                v1 == xn * dy * dz;
+        assert(t2 == v2 * v2) by (nonlinear_arith)
+            requires t2 == ((yn * yn) * (dx * dx)) * (dz * dz),
+                v2 == yn * dx * dz;
+        assert(t3 == v3 * v3) by (nonlinear_arith)
+            requires t3 == (zn * zn) * ((dx * dx) * (dy * dy)),
+                v3 == zn * dx * dy;
+
+        assert(norm_num == t1 + t2 + t3) by (nonlinear_arith)
+            requires
+                norm_num == ab_num * (dz * dz) + (zn * zn) * ab_D,
+                ab_num == (xn * xn) * (dy * dy) + (yn * yn) * (dx * dx),
+                ab_D == (dx * dx) * (dy * dy),
+                t1 == ((xn * xn) * (dy * dy)) * (dz * dz),
+                t2 == ((yn * yn) * (dx * dx)) * (dz * dz),
+                t3 == (zn * zn) * ((dx * dx) * (dy * dy));
+
+        assert(norm_num == v1 * v1 + v2 * v2 + v3 * v3) by (nonlinear_arith)
+            requires norm_num == t1 + t2 + t3,
+                t1 == v1 * v1, t2 == v2 * v2, t3 == v3 * v3;
+    }
+
+    /// Helper: Lagrange identity — dot² + z1² + z2² + z3² = sum of all aij².
+    proof fn lemma_lagrange_identity_3d(
+        a11: int, a12: int, a13: int,
+        a21: int, a22: int, a23: int,
+        a31: int, a32: int, a33: int,
+        dot_num: int,
+    )
+        requires
+            dot_num == a11 + a22 + a33,
+            a11 * a22 == a12 * a21,
+            a11 * a33 == a13 * a31,
+            a22 * a33 == a23 * a32,
+        ensures
+            dot_num * dot_num + (a12 - a21)*(a12 - a21)
+                + (a13 - a31)*(a13 - a31) + (a23 - a32)*(a23 - a32)
+                == a11*a11 + a12*a12 + a13*a13
+                    + a21*a21 + a22*a22 + a23*a23
+                    + a31*a31 + a32*a32 + a33*a33,
+            (a12 - a21)*(a12 - a21) >= 0int,
+            (a13 - a31)*(a13 - a31) >= 0int,
+            (a23 - a32)*(a23 - a32) >= 0int,
+    {
+        let ghost z1 = a12 - a21;
+        let ghost z2 = a13 - a31;
+        let ghost z3 = a23 - a32;
+        let ghost dot_sq_val = dot_num * dot_num;
+
+        let ghost diag_sq = a11*a11 + a22*a22 + a33*a33;
+        let ghost cross_diag = 2 * (a11*a22 + a11*a33 + a22*a33);
+        assert(dot_sq_val == diag_sq + cross_diag) by (nonlinear_arith)
+            requires
+                dot_num == a11 + a22 + a33,
+                dot_sq_val == dot_num * dot_num,
+                diag_sq == a11*a11 + a22*a22 + a33*a33,
+                cross_diag == 2 * (a11*a22 + a11*a33 + a22*a33);
+
+        let ghost off_diag_sq = a12*a12 + a21*a21 + a13*a13 + a31*a31 + a23*a23 + a32*a32;
+        let ghost cross_off = 2 * (a12*a21 + a13*a31 + a23*a32);
+        assert(z1*z1 + z2*z2 + z3*z3 == off_diag_sq - cross_off) by (nonlinear_arith)
+            requires
+                z1 == a12 - a21, z2 == a13 - a31, z3 == a23 - a32,
+                off_diag_sq == a12*a12 + a21*a21 + a13*a13 + a31*a31 + a23*a23 + a32*a32,
+                cross_off == 2 * (a12*a21 + a13*a31 + a23*a32);
+
+        assert(cross_diag == cross_off) by (nonlinear_arith)
+            requires
+                cross_diag == 2 * (a11*a22 + a11*a33 + a22*a33),
+                cross_off == 2 * (a12*a21 + a13*a31 + a23*a32),
+                a11 * a22 == a12 * a21,
+                a11 * a33 == a13 * a31,
+                a22 * a33 == a23 * a32;
+
+        let ghost sum_sq = a11*a11 + a12*a12 + a13*a13
+            + a21*a21 + a22*a22 + a23*a23
+            + a31*a31 + a32*a32 + a33*a33;
+
+        assert(dot_sq_val + z1*z1 + z2*z2 + z3*z3 == sum_sq) by (nonlinear_arith)
+            requires
+                dot_sq_val == diag_sq + cross_diag,
+                z1*z1 + z2*z2 + z3*z3 == off_diag_sq - cross_off,
+                cross_diag == cross_off,
+                sum_sq == a11*a11 + a12*a12 + a13*a13
+                    + a21*a21 + a22*a22 + a23*a23
+                    + a31*a31 + a32*a32 + a33*a33,
+                diag_sq == a11*a11 + a22*a22 + a33*a33,
+                off_diag_sq == a12*a12 + a21*a21 + a13*a13 + a31*a31 + a23*a23 + a32*a32;
+
+        assert(z1*z1 >= 0int) by (nonlinear_arith);
+        assert(z2*z2 >= 0int) by (nonlinear_arith);
+        assert(z3*z3 >= 0int) by (nonlinear_arith);
+    }
+
+    /// Integer Cauchy-Schwarz: (x1y1+x2y2+x3y3)² ≤ (x1²+x2²+x3²)(y1²+y2²+y3²).
+    proof fn lemma_cauchy_schwarz_int_3d(
+        norm_l_num: int, norm_r_num: int, dot_num: int,
+        x1: int, x2: int, x3: int,
+        y1: int, y2: int, y3: int,
+    )
+        requires
+            norm_l_num == x1*x1 + x2*x2 + x3*x3,
+            norm_r_num == y1*y1 + y2*y2 + y3*y3,
+            dot_num == x1*y1 + x2*y2 + x3*y3,
+        ensures
+            dot_num * dot_num <= norm_l_num * norm_r_num,
+    {
+        let ghost a11 = x1 * y1;
+        let ghost a12 = x1 * y2;
+        let ghost a13 = x1 * y3;
+        let ghost a21 = x2 * y1;
+        let ghost a22 = x2 * y2;
+        let ghost a23 = x2 * y3;
+        let ghost a31 = x3 * y1;
+        let ghost a32 = x3 * y2;
+        let ghost a33 = x3 * y3;
+
+        let ghost x1sq = x1 * x1;
+        let ghost x2sq = x2 * x2;
+        let ghost x3sq = x3 * x3;
+        let ghost y1sq = y1 * y1;
+        let ghost y2sq = y2 * y2;
+        let ghost y3sq = y3 * y3;
+
+        // Distribution: decompose xi² * yj² = aij² first, then combine
+        assert(x1sq * y1sq == a11*a11) by (nonlinear_arith)
+            requires x1sq == x1*x1, y1sq == y1*y1, a11 == x1*y1;
+        assert(x1sq * y2sq == a12*a12) by (nonlinear_arith)
+            requires x1sq == x1*x1, y2sq == y2*y2, a12 == x1*y2;
+        assert(x1sq * y3sq == a13*a13) by (nonlinear_arith)
+            requires x1sq == x1*x1, y3sq == y3*y3, a13 == x1*y3;
+        assert(x1sq * norm_r_num == a11*a11 + a12*a12 + a13*a13)
+            by (nonlinear_arith)
+            requires norm_r_num == y1sq + y2sq + y3sq,
+                x1sq * y1sq == a11*a11, x1sq * y2sq == a12*a12,
+                x1sq * y3sq == a13*a13;
+
+        assert(x2sq * y1sq == a21*a21) by (nonlinear_arith)
+            requires x2sq == x2*x2, y1sq == y1*y1, a21 == x2*y1;
+        assert(x2sq * y2sq == a22*a22) by (nonlinear_arith)
+            requires x2sq == x2*x2, y2sq == y2*y2, a22 == x2*y2;
+        assert(x2sq * y3sq == a23*a23) by (nonlinear_arith)
+            requires x2sq == x2*x2, y3sq == y3*y3, a23 == x2*y3;
+        assert(x2sq * norm_r_num == a21*a21 + a22*a22 + a23*a23)
+            by (nonlinear_arith)
+            requires norm_r_num == y1sq + y2sq + y3sq,
+                x2sq * y1sq == a21*a21, x2sq * y2sq == a22*a22,
+                x2sq * y3sq == a23*a23;
+
+        assert(x3sq * y1sq == a31*a31) by (nonlinear_arith)
+            requires x3sq == x3*x3, y1sq == y1*y1, a31 == x3*y1;
+        assert(x3sq * y2sq == a32*a32) by (nonlinear_arith)
+            requires x3sq == x3*x3, y2sq == y2*y2, a32 == x3*y2;
+        assert(x3sq * y3sq == a33*a33) by (nonlinear_arith)
+            requires x3sq == x3*x3, y3sq == y3*y3, a33 == x3*y3;
+        assert(x3sq * norm_r_num == a31*a31 + a32*a32 + a33*a33)
+            by (nonlinear_arith)
+            requires norm_r_num == y1sq + y2sq + y3sq,
+                x3sq * y1sq == a31*a31, x3sq * y2sq == a32*a32,
+                x3sq * y3sq == a33*a33;
+
+        let ghost sum_sq = a11*a11 + a12*a12 + a13*a13
+            + a21*a21 + a22*a22 + a23*a23
+            + a31*a31 + a32*a32 + a33*a33;
+        assert(norm_l_num * norm_r_num == sum_sq) by (nonlinear_arith)
+            requires
+                norm_l_num == x1sq + x2sq + x3sq,
+                x1sq * norm_r_num == a11*a11 + a12*a12 + a13*a13,
+                x2sq * norm_r_num == a21*a21 + a22*a22 + a23*a23,
+                x3sq * norm_r_num == a31*a31 + a32*a32 + a33*a33,
+                sum_sq == a11*a11 + a12*a12 + a13*a13
+                    + a21*a21 + a22*a22 + a23*a23
+                    + a31*a31 + a32*a32 + a33*a33;
+
+        // Cross equalities
+        assert(a11 * a22 == a12 * a21) by (nonlinear_arith)
+            requires a11==x1*y1, a22==x2*y2, a12==x1*y2, a21==x2*y1;
+        assert(a11 * a33 == a13 * a31) by (nonlinear_arith)
+            requires a11==x1*y1, a33==x3*y3, a13==x1*y3, a31==x3*y1;
+        assert(a22 * a33 == a23 * a32) by (nonlinear_arith)
+            requires a22==x2*y2, a33==x3*y3, a23==x2*y3, a32==x3*y2;
+
+        // Lagrange identity
+        Self::lemma_lagrange_identity_3d(
+            a11, a12, a13, a21, a22, a23, a31, a32, a33, dot_num,
+        );
+
+        // Final: dot² ≤ norm_l * norm_r
+        assert(dot_num * dot_num <= norm_l_num * norm_r_num) by (nonlinear_arith)
+            requires
+                dot_num * dot_num + (a12 - a21)*(a12 - a21)
+                    + (a13 - a31)*(a13 - a31) + (a23 - a32)*(a23 - a32)
+                    == a11*a11 + a12*a12 + a13*a13
+                        + a21*a21 + a22*a22 + a23*a23
+                        + a31*a31 + a32*a32 + a33*a33,
+                norm_l_num * norm_r_num == sum_sq,
+                sum_sq == a11*a11 + a12*a12 + a13*a13
+                    + a21*a21 + a22*a22 + a23*a23
+                    + a31*a31 + a32*a32 + a33*a33,
+                (a12 - a21)*(a12 - a21) >= 0int,
+                (a13 - a31)*(a13 - a31) >= 0int,
+                (a23 - a32)*(a23 - a32) >= 0int;
+    }
+
+    /// Helper: ((da*dd_)*(db*de)*(dc*df))² == (da²*db²*dc²)*(dd_²*de²*df²).
+    proof fn lemma_denom_sq_three_factors(
+        da: int, db: int, dc: int, dd_: int, de: int, df: int,
+    )
+        ensures
+            ((da * dd_) * (db * de) * (dc * df))
+                * ((da * dd_) * (db * de) * (dc * df))
+                == ((da * da) * (db * db) * (dc * dc))
+                    * ((dd_ * dd_) * (de * de) * (df * df)),
+    {
+        let ghost g1 = da * dd_;
+        let ghost g2 = db * de;
+        let ghost g3 = dc * df;
+        let ghost D_dot = (da * dd_) * (db * de) * (dc * df);
+        let ghost Dsq = D_dot * D_dot;
+        let ghost nl_d = (da * da) * (db * db) * (dc * dc);
+        let ghost nr_d = (dd_ * dd_) * (de * de) * (df * df);
+
+        assert(D_dot == g1 * g2 * g3) by (nonlinear_arith)
+            requires D_dot == (da * dd_) * (db * de) * (dc * df),
+                g1 == da * dd_, g2 == db * de, g3 == dc * df;
+        let ghost g1s = g1 * g1;
+        let ghost g2s = g2 * g2;
+        let ghost g3s = g3 * g3;
+        let ghost g12 = g1 * g2;
+        assert(D_dot == g12 * g3) by (nonlinear_arith)
+            requires D_dot == g1 * g2 * g3, g12 == g1 * g2;
+        let ghost g12s = g12 * g12;
+        assert(Dsq == g12s * g3s) by (nonlinear_arith)
+            requires Dsq == D_dot * D_dot, D_dot == g12 * g3,
+                g12s == g12 * g12, g3s == g3 * g3;
+        assert(g12s == g1s * g2s) by (nonlinear_arith)
+            requires g12s == g12 * g12, g12 == g1 * g2,
+                g1s == g1 * g1, g2s == g2 * g2;
+        assert(Dsq == g1s * g2s * g3s) by (nonlinear_arith)
+            requires Dsq == g12s * g3s, g12s == g1s * g2s;
+
+        assert(g1s == da * da * (dd_ * dd_)) by (nonlinear_arith)
+            requires g1s == g1 * g1, g1 == da * dd_;
+        assert(g2s == db * db * (de * de)) by (nonlinear_arith)
+            requires g2s == g2 * g2, g2 == db * de;
+        assert(g3s == dc * dc * (df * df)) by (nonlinear_arith)
+            requires g3s == g3 * g3, g3 == dc * df;
+
+        let ghost da2 = da * da;
+        let ghost db2 = db * db;
+        let ghost dc2 = dc * dc;
+        let ghost dd2 = dd_ * dd_;
+        let ghost de2 = de * de;
+        let ghost df2 = df * df;
+        let ghost nl_nr = nl_d * nr_d;
+        assert(nl_d == da2 * db2 * dc2) by (nonlinear_arith)
+            requires nl_d == (da * da) * (db * db) * (dc * dc),
+                da2 == da * da, db2 == db * db, dc2 == dc * dc;
+        assert(nr_d == dd2 * de2 * df2) by (nonlinear_arith)
+            requires nr_d == (dd_ * dd_) * (de * de) * (df * df),
+                dd2 == dd_ * dd_, de2 == de * de, df2 == df * df;
+        let ghost h12 = g1s * g2s;
+        assert(h12 == da2 * dd2 * db2 * de2) by (nonlinear_arith)
+            requires h12 == g1s * g2s,
+                g1s == da2 * dd2, g2s == db2 * de2;
+        let ghost h123 = h12 * g3s;
+        assert(h123 == da2 * dd2 * db2 * de2 * dc2 * df2) by (nonlinear_arith)
+            requires h123 == h12 * g3s,
+                h12 == da2 * dd2 * db2 * de2,
+                g3s == dc2 * df2;
+        let ghost nl_nr_flat = da2 * db2 * dc2 * dd2 * de2 * df2;
+        assert(nl_nr == nl_nr_flat) by (nonlinear_arith)
+            requires nl_nr == nl_d * nr_d,
+                nl_d == da2 * db2 * dc2,
+                nr_d == dd2 * de2 * df2,
+                nl_nr_flat == da2 * db2 * dc2 * dd2 * de2 * df2;
+        assert(h123 == nl_nr_flat) by (nonlinear_arith)
+            requires
+                h123 == da2 * dd2 * db2 * de2 * dc2 * df2,
+                nl_nr_flat == da2 * db2 * dc2 * dd2 * de2 * df2;
+        assert(nl_d * nr_d == g1s * g2s * g3s) by (nonlinear_arith)
+            requires nl_nr == nl_nr_flat, h123 == nl_nr_flat,
+                h123 == h12 * g3s, h12 == g1s * g2s, nl_nr == nl_d * nr_d;
+
+        assert(Dsq == nl_d * nr_d) by (nonlinear_arith)
+            requires Dsq == g1s * g2s * g3s,
+                nl_d * nr_d == g1s * g2s * g3s;
+    }
+
     /// (a*d + b*e + c*f)² ≤ (a² + b² + c²)(d² + e² + f²).
     pub proof fn lemma_cauchy_schwarz_3d(
         a: Self, b: Self, c: Self, d: Self, e: Self, f: Self,
@@ -3202,184 +3515,23 @@ impl Rational {
             requires dot.num == p1 + p2 + p3,
                 p1 == x1 * y1, p2 == x2 * y2, p3 == x3 * y3;
 
-        // ── Show norm_l.num = x1² + x2² + x3² ──
-        let ghost x1sq = x1 * x1;
-        let ghost x2sq = x2 * x2;
-        let ghost x3sq = x3 * x3;
+        // ── norm_l.num = x1² + x2² + x3² ──
+        Self::lemma_norm_num_sum_squares_3d(
+            norm_l.num, aa_bb.num, aa_bb.denom(),
+            an, bn, cn, da, db, dc,
+        );
 
-        let ghost nl_t1 = ((an * an) * (db * db)) * (dc * dc);
-        let ghost nl_t2 = ((bn * bn) * (da * da)) * (dc * dc);
-        let ghost nl_t3 = (cn * cn) * ((da * da) * (db * db));
-        assert(nl_t1 == x1sq) by (nonlinear_arith)
-            requires nl_t1 == ((an * an) * (db * db)) * (dc * dc),
-                x1sq == x1 * x1, x1 == an * db * dc;
-        assert(nl_t2 == x2sq) by (nonlinear_arith)
-            requires nl_t2 == ((bn * bn) * (da * da)) * (dc * dc),
-                x2sq == x2 * x2, x2 == bn * da * dc;
-        assert(nl_t3 == x3sq) by (nonlinear_arith)
-            requires nl_t3 == (cn * cn) * ((da * da) * (db * db)),
-                x3sq == x3 * x3, x3 == cn * da * db;
+        // ── norm_r.num = y1² + y2² + y3² ──
+        Self::lemma_norm_num_sum_squares_3d(
+            norm_r.num, dd_ee.num, dd_ee.denom(),
+            dn, en_, fn_, dd_, de, df,
+        );
 
-        assert(norm_l.num == nl_t1 + nl_t2 + nl_t3) by (nonlinear_arith)
-            requires
-                norm_l.num == aa_bb.num * (dc * dc) + (cn * cn) * aa_bb.denom(),
-                aa_bb.num == (an * an) * (db * db) + (bn * bn) * (da * da),
-                aa_bb.denom() == (da * da) * (db * db),
-                nl_t1 == ((an * an) * (db * db)) * (dc * dc),
-                nl_t2 == ((bn * bn) * (da * da)) * (dc * dc),
-                nl_t3 == (cn * cn) * ((da * da) * (db * db));
-
-        assert(norm_l.num == x1sq + x2sq + x3sq) by (nonlinear_arith)
-            requires norm_l.num == nl_t1 + nl_t2 + nl_t3,
-                nl_t1 == x1sq, nl_t2 == x2sq, nl_t3 == x3sq;
-
-        // ── Show norm_r.num = y1² + y2² + y3² ──
-        let ghost y1sq = y1 * y1;
-        let ghost y2sq = y2 * y2;
-        let ghost y3sq = y3 * y3;
-
-        let ghost nr_t1 = ((dn * dn) * (de * de)) * (df * df);
-        let ghost nr_t2 = ((en_ * en_) * (dd_ * dd_)) * (df * df);
-        let ghost nr_t3 = (fn_ * fn_) * ((dd_ * dd_) * (de * de));
-        assert(nr_t1 == y1sq) by (nonlinear_arith)
-            requires nr_t1 == ((dn * dn) * (de * de)) * (df * df),
-                y1sq == y1 * y1, y1 == dn * de * df;
-        assert(nr_t2 == y2sq) by (nonlinear_arith)
-            requires nr_t2 == ((en_ * en_) * (dd_ * dd_)) * (df * df),
-                y2sq == y2 * y2, y2 == en_ * dd_ * df;
-        assert(nr_t3 == y3sq) by (nonlinear_arith)
-            requires nr_t3 == (fn_ * fn_) * ((dd_ * dd_) * (de * de)),
-                y3sq == y3 * y3, y3 == fn_ * dd_ * de;
-
-        assert(norm_r.num == nr_t1 + nr_t2 + nr_t3) by (nonlinear_arith)
-            requires
-                norm_r.num == dd_ee.num * (df * df) + (fn_ * fn_) * dd_ee.denom(),
-                dd_ee.num == (dn * dn) * (de * de) + (en_ * en_) * (dd_ * dd_),
-                dd_ee.denom() == (dd_ * dd_) * (de * de),
-                nr_t1 == ((dn * dn) * (de * de)) * (df * df),
-                nr_t2 == ((en_ * en_) * (dd_ * dd_)) * (df * df),
-                nr_t3 == (fn_ * fn_) * ((dd_ * dd_) * (de * de));
-
-        assert(norm_r.num == y1sq + y2sq + y3sq) by (nonlinear_arith)
-            requires norm_r.num == nr_t1 + nr_t2 + nr_t3,
-                nr_t1 == y1sq, nr_t2 == y2sq, nr_t3 == y3sq;
-
-        // ── Distribution: norm_l.num * norm_r.num = sum of all aij² ──
-        let ghost a11 = x1 * y1;
-        let ghost a12 = x1 * y2;
-        let ghost a13 = x1 * y3;
-        let ghost a21 = x2 * y1;
-        let ghost a22 = x2 * y2;
-        let ghost a23 = x2 * y3;
-        let ghost a31 = x3 * y1;
-        let ghost a32 = x3 * y2;
-        let ghost a33 = x3 * y3;
-
-        // x1² * nr = a11² + a12² + a13²
-        assert(x1sq * norm_r.num == a11 * a11 + a12 * a12 + a13 * a13)
-            by (nonlinear_arith)
-            requires
-                norm_r.num == y1sq + y2sq + y3sq,
-                x1sq == x1 * x1,
-                y1sq == y1 * y1, y2sq == y2 * y2, y3sq == y3 * y3,
-                a11 == x1 * y1, a12 == x1 * y2, a13 == x1 * y3;
-
-        // x2² * nr = a21² + a22² + a23²
-        assert(x2sq * norm_r.num == a21 * a21 + a22 * a22 + a23 * a23)
-            by (nonlinear_arith)
-            requires
-                norm_r.num == y1sq + y2sq + y3sq,
-                x2sq == x2 * x2,
-                y1sq == y1 * y1, y2sq == y2 * y2, y3sq == y3 * y3,
-                a21 == x2 * y1, a22 == x2 * y2, a23 == x2 * y3;
-
-        // x3² * nr = a31² + a32² + a33²
-        assert(x3sq * norm_r.num == a31 * a31 + a32 * a32 + a33 * a33)
-            by (nonlinear_arith)
-            requires
-                norm_r.num == y1sq + y2sq + y3sq,
-                x3sq == x3 * x3,
-                y1sq == y1 * y1, y2sq == y2 * y2, y3sq == y3 * y3,
-                a31 == x3 * y1, a32 == x3 * y2, a33 == x3 * y3;
-
-        // nl * nr = sum of all aij²
-        let ghost sum_sq = a11*a11 + a12*a12 + a13*a13
-            + a21*a21 + a22*a22 + a23*a23
-            + a31*a31 + a32*a32 + a33*a33;
-        assert(norm_l.num * norm_r.num == sum_sq) by (nonlinear_arith)
-            requires
-                norm_l.num == x1sq + x2sq + x3sq,
-                x1sq * norm_r.num == a11*a11 + a12*a12 + a13*a13,
-                x2sq * norm_r.num == a21*a21 + a22*a22 + a23*a23,
-                x3sq * norm_r.num == a31*a31 + a32*a32 + a33*a33,
-                sum_sq == a11*a11 + a12*a12 + a13*a13
-                    + a21*a21 + a22*a22 + a23*a23
-                    + a31*a31 + a32*a32 + a33*a33;
-
-        // ── Cross equalities: aij*aji = aii*ajj ──
-        assert(a11 * a22 == a12 * a21) by (nonlinear_arith)
-            requires a11==x1*y1, a22==x2*y2, a12==x1*y2, a21==x2*y1;
-        assert(a11 * a33 == a13 * a31) by (nonlinear_arith)
-            requires a11==x1*y1, a33==x3*y3, a13==x1*y3, a31==x3*y1;
-        assert(a22 * a33 == a23 * a32) by (nonlinear_arith)
-            requires a22==x2*y2, a33==x3*y3, a23==x2*y3, a32==x3*y2;
-
-        // ── Lagrange identity: dot² + z1² + z2² + z3² = sum_sq ──
-        let ghost z1 = a12 - a21;
-        let ghost z2 = a13 - a31;
-        let ghost z3 = a23 - a32;
-        let ghost dot_sq_val = dot.num * dot.num;
-
-        // Break into: diagonal² + cross_diag + off_diagonal² - cross_off
-        let ghost diag_sq = a11*a11 + a22*a22 + a33*a33;
-        let ghost cross_diag = 2 * (a11*a22 + a11*a33 + a22*a33);
-        assert(dot_sq_val == diag_sq + cross_diag) by (nonlinear_arith)
-            requires
-                dot.num == a11 + a22 + a33,
-                dot_sq_val == dot.num * dot.num,
-                diag_sq == a11*a11 + a22*a22 + a33*a33,
-                cross_diag == 2 * (a11*a22 + a11*a33 + a22*a33);
-
-        let ghost off_diag_sq = a12*a12 + a21*a21 + a13*a13 + a31*a31 + a23*a23 + a32*a32;
-        let ghost cross_off = 2 * (a12*a21 + a13*a31 + a23*a32);
-        assert(z1*z1 + z2*z2 + z3*z3 == off_diag_sq - cross_off) by (nonlinear_arith)
-            requires
-                z1 == a12 - a21, z2 == a13 - a31, z3 == a23 - a32,
-                off_diag_sq == a12*a12 + a21*a21 + a13*a13 + a31*a31 + a23*a23 + a32*a32,
-                cross_off == 2 * (a12*a21 + a13*a31 + a23*a32);
-
-        // From cross equalities: cross_diag == cross_off
-        assert(cross_diag == cross_off) by (nonlinear_arith)
-            requires
-                cross_diag == 2 * (a11*a22 + a11*a33 + a22*a33),
-                cross_off == 2 * (a12*a21 + a13*a31 + a23*a32),
-                a11 * a22 == a12 * a21,
-                a11 * a33 == a13 * a31,
-                a22 * a33 == a23 * a32;
-
-        assert(dot_sq_val + z1*z1 + z2*z2 + z3*z3 == sum_sq) by (nonlinear_arith)
-            requires
-                dot_sq_val == diag_sq + cross_diag,
-                z1*z1 + z2*z2 + z3*z3 == off_diag_sq - cross_off,
-                cross_diag == cross_off,
-                sum_sq == a11*a11 + a12*a12 + a13*a13
-                    + a21*a21 + a22*a22 + a23*a23
-                    + a31*a31 + a32*a32 + a33*a33,
-                diag_sq == a11*a11 + a22*a22 + a33*a33,
-                off_diag_sq == a12*a12 + a21*a21 + a13*a13 + a31*a31 + a23*a23 + a32*a32;
-
-        // z squares are non-negative
-        assert(z1*z1 >= 0int) by (nonlinear_arith);
-        assert(z2*z2 >= 0int) by (nonlinear_arith);
-        assert(z3*z3 >= 0int) by (nonlinear_arith);
-
-        // dot² ≤ sum_sq since z's are squares ≥ 0
-        assert(dot.num * dot.num <= norm_l.num * norm_r.num) by (nonlinear_arith)
-            requires
-                dot_sq_val == dot.num * dot.num,
-                dot_sq_val + z1*z1 + z2*z2 + z3*z3 == sum_sq,
-                norm_l.num * norm_r.num == sum_sq,
-                z1*z1 >= 0int, z2*z2 >= 0int, z3*z3 >= 0int;
+        // ── Integer Cauchy-Schwarz: dot² ≤ norm_l * norm_r ──
+        Self::lemma_cauchy_schwarz_int_3d(
+            norm_l.num, norm_r.num, dot.num,
+            x1, x2, x3, y1, y2, y3,
+        );
 
         // ── Show dot_sq.denom() == prod.denom() ──
         // dot.denom() = (da*dd_)*(db*de)*(dc*df)
@@ -3419,89 +3571,18 @@ impl Rational {
                 prod.denom() == norm_l.denom() * norm_r.denom(),
                 norm_l.denom() == nl_d, norm_r.denom() == nr_d;
 
-        // Show Dsq == nl_d * nr_d (both = da²*db²*dc²*dd²*de²*df²)
-        // Break into pieces: D_dot = da*dd_ * db*de * dc*df
-        // Dsq = (da*dd_)²*(db*de)²*(dc*df)²
-        let ghost g1 = da * dd_;
-        let ghost g2 = db * de;
-        let ghost g3 = dc * df;
-        assert(D_dot == g1 * g2 * g3) by (nonlinear_arith)
-            requires D_dot == (da * dd_) * (db * de) * (dc * df),
-                g1 == da * dd_, g2 == db * de, g3 == dc * df;
-        let ghost g1s = g1 * g1;
-        let ghost g2s = g2 * g2;
-        let ghost g3s = g3 * g3;
-        // Dsq = (g1*g2*g3)² — break via intermediate product
-        let ghost g12 = g1 * g2;
-        assert(D_dot == g12 * g3) by (nonlinear_arith)
-            requires D_dot == g1 * g2 * g3, g12 == g1 * g2;
-        let ghost g12s = g12 * g12;
-        assert(Dsq == g12s * g3s) by (nonlinear_arith)
-            requires Dsq == D_dot * D_dot, D_dot == g12 * g3,
-                g12s == g12 * g12, g3s == g3 * g3;
-        assert(g12s == g1s * g2s) by (nonlinear_arith)
-            requires g12s == g12 * g12, g12 == g1 * g2,
-                g1s == g1 * g1, g2s == g2 * g2;
-        assert(Dsq == g1s * g2s * g3s) by (nonlinear_arith)
-            requires Dsq == g12s * g3s, g12s == g1s * g2s;
-
-        assert(g1s == da * da * (dd_ * dd_)) by (nonlinear_arith)
-            requires g1s == g1 * g1, g1 == da * dd_;
-        assert(g2s == db * db * (de * de)) by (nonlinear_arith)
-            requires g2s == g2 * g2, g2 == db * de;
-        assert(g3s == dc * dc * (df * df)) by (nonlinear_arith)
-            requires g3s == g3 * g3, g3 == dc * df;
-
-        // nl_d * nr_d — break into stepwise products
-        let ghost da2 = da * da;
-        let ghost db2 = db * db;
-        let ghost dc2 = dc * dc;
-        let ghost dd2 = dd_ * dd_;
-        let ghost de2 = de * de;
-        let ghost df2 = df * df;
-        // g1s = da2*dd2, g2s = db2*de2, g3s = dc2*df2
-        // nl_d = da2*db2*dc2, nr_d = dd2*de2*df2
-        // nl_d * nr_d = da2*db2*dc2*dd2*de2*df2
-        // g1s*g2s*g3s = da2*dd2*db2*de2*dc2*df2 (same terms, different order)
-        let ghost nl_nr = nl_d * nr_d;
-        assert(nl_d == da2 * db2 * dc2) by (nonlinear_arith)
-            requires nl_d == (da * da) * (db * db) * (dc * dc),
-                da2 == da * da, db2 == db * db, dc2 == dc * dc;
-        assert(nr_d == dd2 * de2 * df2) by (nonlinear_arith)
-            requires nr_d == (dd_ * dd_) * (de * de) * (df * df),
-                dd2 == dd_ * dd_, de2 == de * de, df2 == df * df;
-        // Build g1s*g2s*g3s stepwise
-        let ghost h12 = g1s * g2s;
-        assert(h12 == da2 * dd2 * db2 * de2) by (nonlinear_arith)
-            requires h12 == g1s * g2s,
-                g1s == da2 * dd2, g2s == db2 * de2;
-        let ghost h123 = h12 * g3s;
-        assert(h123 == da2 * dd2 * db2 * de2 * dc2 * df2) by (nonlinear_arith)
-            requires h123 == h12 * g3s,
-                h12 == da2 * dd2 * db2 * de2,
-                g3s == dc2 * df2;
-        // nl_nr = da2*db2*dc2 * dd2*de2*df2
-        let ghost nl_nr_flat = da2 * db2 * dc2 * dd2 * de2 * df2;
-        assert(nl_nr == nl_nr_flat) by (nonlinear_arith)
-            requires nl_nr == nl_d * nr_d,
-                nl_d == da2 * db2 * dc2,
-                nr_d == dd2 * de2 * df2,
-                nl_nr_flat == da2 * db2 * dc2 * dd2 * de2 * df2;
-        // h123 = da2*dd2*db2*de2*dc2*df2 — same as nl_nr_flat by commutativity
-        assert(h123 == nl_nr_flat) by (nonlinear_arith)
-            requires
-                h123 == da2 * dd2 * db2 * de2 * dc2 * df2,
-                nl_nr_flat == da2 * db2 * dc2 * dd2 * de2 * df2;
-        assert(nl_d * nr_d == g1s * g2s * g3s) by (nonlinear_arith)
-            requires nl_nr == nl_nr_flat, h123 == nl_nr_flat,
-                h123 == h12 * g3s, h12 == g1s * g2s, nl_nr == nl_d * nr_d;
+        // Dsq == nl_d * nr_d via helper
+        Self::lemma_denom_sq_three_factors(da, db, dc, dd_, de, df);
 
         assert(dot_sq.denom() == prod.denom()) by (nonlinear_arith)
             requires
                 dot_sq.denom() == Dsq,
                 prod.denom() == nl_d * nr_d,
-                Dsq == g1s * g2s * g3s,
-                nl_d * nr_d == g1s * g2s * g3s;
+                Dsq == D_dot * D_dot,
+                D_dot == (da * dd_) * (db * de) * (dc * df),
+                ((da * dd_) * (db * de) * (dc * df))
+                    * ((da * dd_) * (db * de) * (dc * df))
+                    == nl_d * nr_d;
 
         // prod.denom() > 0
         assert(prod.denom() > 0) by (nonlinear_arith)
