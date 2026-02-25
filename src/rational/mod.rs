@@ -16,6 +16,7 @@ pub mod ordering;
 pub mod division;
 pub mod applications;
 pub mod horner;
+pub mod algebra;
 
 verus! {
 

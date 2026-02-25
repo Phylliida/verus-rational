@@ -6,62 +6,62 @@
 
 ### Spec Functions
 
-- **`open spec fn denom_nat`** — [rational/mod.rs:33](./src/rational/mod.rs#L33)
+- **`open spec fn denom_nat`** — [rational/mod.rs:34](./src/rational/mod.rs#L34)
   > Effective denominator as a nat (always >= 1).
-- **`open spec fn denom`** — [rational/mod.rs:38](./src/rational/mod.rs#L38)
+- **`open spec fn denom`** — [rational/mod.rs:39](./src/rational/mod.rs#L39)
   > Effective denominator as an int (always >= 1).
-- **`open spec fn as_real`** — [rational/mod.rs:43](./src/rational/mod.rs#L43)
+- **`open spec fn as_real`** — [rational/mod.rs:44](./src/rational/mod.rs#L44)
   > Interpretation as a real number: num / denom.
-- **`open spec fn from_int_spec`** — [rational/mod.rs:48](./src/rational/mod.rs#L48)
+- **`open spec fn from_int_spec`** — [rational/mod.rs:49](./src/rational/mod.rs#L49)
   > Construct a rational from an integer (denominator = 1).
-- **`open spec fn from_frac_spec`** — [rational/mod.rs:55](./src/rational/mod.rs#L55)
+- **`open spec fn from_frac_spec`** — [rational/mod.rs:56](./src/rational/mod.rs#L56)
   > Spec-level construction from numerator and denominator. The sign of the denominator is moved to the numerator so the effective denominator is always positive.
-- **`open spec fn add_spec`** — [rational/mod.rs:109](./src/rational/mod.rs#L109)
+- **`open spec fn add_spec`** — [rational/mod.rs:110](./src/rational/mod.rs#L110)
   > Spec-level addition: a/b + c/d = (a*d + c*b) / (b*d).
-- **`open spec fn neg_spec`** — [rational/mod.rs:132](./src/rational/mod.rs#L132)
+- **`open spec fn neg_spec`** — [rational/mod.rs:133](./src/rational/mod.rs#L133)
   > Spec-level negation: -(a/b) = (-a)/b.
-- **`open spec fn sub_spec`** — [rational/mod.rs:145](./src/rational/mod.rs#L145)
+- **`open spec fn sub_spec`** — [rational/mod.rs:146](./src/rational/mod.rs#L146)
   > Spec-level subtraction: a - b = a + (-b).
-- **`open spec fn mul_spec`** — [rational/mod.rs:159](./src/rational/mod.rs#L159)
+- **`open spec fn mul_spec`** — [rational/mod.rs:160](./src/rational/mod.rs#L160)
   > Spec-level multiplication: (a/b) * (c/d) = (a*c) / (b*d).
-- **`open spec fn reciprocal_spec`** — [rational/mod.rs:179](./src/rational/mod.rs#L179)
+- **`open spec fn reciprocal_spec`** — [rational/mod.rs:180](./src/rational/mod.rs#L180)
   > Spec-level reciprocal: flips numerator and denominator. Only meaningful when self.num != 0.
-- **`open spec fn div_spec`** — [rational/mod.rs:192](./src/rational/mod.rs#L192)
+- **`open spec fn div_spec`** — [rational/mod.rs:193](./src/rational/mod.rs#L193)
   > Division as multiplication by reciprocal: a / b := a * inv(b). Requires b.num != 0 (ensured by callers at proof level).
-- **`open spec fn signum`** — [rational/mod.rs:197](./src/rational/mod.rs#L197)
+- **`open spec fn signum`** — [rational/mod.rs:198](./src/rational/mod.rs#L198)
   > Sign of the rational: 1, -1, or 0.
-- **`open spec fn abs_spec`** — [rational/mod.rs:208](./src/rational/mod.rs#L208)
+- **`open spec fn abs_spec`** — [rational/mod.rs:209](./src/rational/mod.rs#L209)
   > Absolute value: |a| = a if a >= 0, else -a.
-- **`open spec fn min_spec`** — [rational/mod.rs:217](./src/rational/mod.rs#L217)
+- **`open spec fn min_spec`** — [rational/mod.rs:218](./src/rational/mod.rs#L218)
   > Minimum of two rationals.
-- **`open spec fn max_spec`** — [rational/mod.rs:226](./src/rational/mod.rs#L226)
+- **`open spec fn max_spec`** — [rational/mod.rs:227](./src/rational/mod.rs#L227)
   > Maximum of two rationals.
-- **`open spec fn eqv_spec`** — [rational/mod.rs:235](./src/rational/mod.rs#L235)
+- **`open spec fn eqv_spec`** — [rational/mod.rs:236](./src/rational/mod.rs#L236)
   > Semantic equality via cross-multiplication: a/b ≡ c/d iff a*d == c*b.
-- **`open spec fn le_spec`** — [rational/mod.rs:240](./src/rational/mod.rs#L240)
+- **`open spec fn le_spec`** — [rational/mod.rs:241](./src/rational/mod.rs#L241)
   > Less-than-or-equal via cross-multiplication.
-- **`open spec fn lt_spec`** — [rational/mod.rs:245](./src/rational/mod.rs#L245)
+- **`open spec fn lt_spec`** — [rational/mod.rs:246](./src/rational/mod.rs#L246)
   > Strict less-than via cross-multiplication.
 
 ### Proof Functions
 
-- **`proof fn new`** — [rational/mod.rs:66](./src/rational/mod.rs#L66)
+- **`proof fn new`** — [rational/mod.rs:67](./src/rational/mod.rs#L67)
   > Construct a rational from an integer.
-- **`proof fn from_int`** — [rational/mod.rs:74](./src/rational/mod.rs#L74)
+- **`proof fn from_int`** — [rational/mod.rs:75](./src/rational/mod.rs#L75)
   > Construct a rational from an integer (alias for `new`).
-- **`proof fn from_frac`** — [rational/mod.rs:82](./src/rational/mod.rs#L82)
+- **`proof fn from_frac`** — [rational/mod.rs:83](./src/rational/mod.rs#L83)
   > Construct a rational from a numerator and positive denominator.
-- **`proof fn zero`** — [rational/mod.rs:93](./src/rational/mod.rs#L93)
+- **`proof fn zero`** — [rational/mod.rs:94](./src/rational/mod.rs#L94)
   > Construct the rational number 0.
-- **`proof fn one`** — [rational/mod.rs:101](./src/rational/mod.rs#L101)
+- **`proof fn one`** — [rational/mod.rs:102](./src/rational/mod.rs#L102)
   > Construct the rational number 1.
-- **`proof fn add`** — [rational/mod.rs:119](./src/rational/mod.rs#L119)
+- **`proof fn add`** — [rational/mod.rs:120](./src/rational/mod.rs#L120)
   > Proof-level addition of two rationals.
-- **`proof fn neg`** — [rational/mod.rs:137](./src/rational/mod.rs#L137)
+- **`proof fn neg`** — [rational/mod.rs:138](./src/rational/mod.rs#L138)
   > Proof-level negation of a rational.
-- **`proof fn sub`** — [rational/mod.rs:150](./src/rational/mod.rs#L150)
+- **`proof fn sub`** — [rational/mod.rs:151](./src/rational/mod.rs#L151)
   > Proof-level subtraction of two rationals.
-- **`proof fn mul`** — [rational/mod.rs:167](./src/rational/mod.rs#L167)
+- **`proof fn mul`** — [rational/mod.rs:168](./src/rational/mod.rs#L168)
   > Proof-level multiplication of two rationals.
 
 ## `rational::applications`
