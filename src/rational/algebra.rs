@@ -24,23 +24,15 @@ impl Equivalence for Rational {
     }
 }
 
-// ── AdditiveGroup ───────────────────────────────────────────────────
+// ── AdditiveCommutativeMonoid ───────────────────────────────────────
 
-impl AdditiveGroup for Rational {
+impl AdditiveCommutativeMonoid for Rational {
     open spec fn zero() -> Self {
         Self::from_int_spec(0)
     }
 
     open spec fn add(self, other: Self) -> Self {
         self.add_spec(other)
-    }
-
-    open spec fn neg(self) -> Self {
-        self.neg_spec()
-    }
-
-    open spec fn sub(self, other: Self) -> Self {
-        self.sub_spec(other)
     }
 
     proof fn axiom_add_commutative(a: Self, b: Self) {
@@ -56,6 +48,22 @@ impl AdditiveGroup for Rational {
         Self::lemma_eqv_reflexive(a);
     }
 
+    proof fn axiom_add_congruence_left(a: Self, b: Self, c: Self) {
+        Self::lemma_eqv_add_congruence_left(a, b, c);
+    }
+}
+
+// ── AdditiveGroup ───────────────────────────────────────────────────
+
+impl AdditiveGroup for Rational {
+    open spec fn neg(self) -> Self {
+        self.neg_spec()
+    }
+
+    open spec fn sub(self, other: Self) -> Self {
+        self.sub_spec(other)
+    }
+
     proof fn axiom_add_inverse_right(a: Self) {
         Self::lemma_add_inverse(a);
     }
@@ -63,10 +71,6 @@ impl AdditiveGroup for Rational {
     proof fn axiom_sub_is_add_neg(a: Self, b: Self) {
         // sub_spec(a, b) == add_spec(a, neg_spec(b)) by definition
         Self::lemma_eqv_reflexive(a.sub_spec(b));
-    }
-
-    proof fn axiom_add_congruence_left(a: Self, b: Self, c: Self) {
-        Self::lemma_eqv_add_congruence_left(a, b, c);
     }
 
     proof fn axiom_neg_congruence(a: Self, b: Self) {
@@ -116,15 +120,11 @@ impl Ring for Rational {
     }
 }
 
-// ── OrderedRing ──────────────────────────────────────────────────────
+// ── PartialOrder ────────────────────────────────────────────────────
 
-impl OrderedRing for Rational {
+impl PartialOrder for Rational {
     open spec fn le(self, other: Self) -> bool {
         self.le_spec(other)
-    }
-
-    open spec fn lt(self, other: Self) -> bool {
-        self.lt_spec(other)
     }
 
     proof fn axiom_le_reflexive(a: Self) {
@@ -137,6 +137,22 @@ impl OrderedRing for Rational {
 
     proof fn axiom_le_transitive(a: Self, b: Self, c: Self) {
         Self::lemma_le_transitive(a, b, c);
+    }
+
+    proof fn axiom_le_congruence(a1: Self, a2: Self, b1: Self, b2: Self) {
+        Self::lemma_eqv_symmetric(a1, a2);     // a2 ≡ a1
+        Self::lemma_eqv_implies_le(a2, a1);    // a2 ≤ a1
+        Self::lemma_le_transitive(a2, a1, b1); // a2 ≤ b1
+        Self::lemma_eqv_implies_le(b1, b2);    // b1 ≤ b2
+        Self::lemma_le_transitive(a2, b1, b2); // a2 ≤ b2
+    }
+}
+
+// ── OrderedRing ──────────────────────────────────────────────────────
+
+impl OrderedRing for Rational {
+    open spec fn lt(self, other: Self) -> bool {
+        self.lt_spec(other)
     }
 
     proof fn axiom_le_total(a: Self, b: Self) {
@@ -156,14 +172,6 @@ impl OrderedRing for Rational {
 
     proof fn axiom_le_mul_nonneg_monotone(a: Self, b: Self, c: Self) {
         Self::lemma_le_mul_nonneg(a, b, c);
-    }
-
-    proof fn axiom_le_congruence(a1: Self, a2: Self, b1: Self, b2: Self) {
-        Self::lemma_eqv_symmetric(a1, a2);     // a2 ≡ a1
-        Self::lemma_eqv_implies_le(a2, a1);    // a2 ≤ a1
-        Self::lemma_le_transitive(a2, a1, b1); // a2 ≤ b1
-        Self::lemma_eqv_implies_le(b1, b2);    // b1 ≤ b2
-        Self::lemma_le_transitive(a2, b1, b2); // a2 ≤ b2
     }
 }
 
