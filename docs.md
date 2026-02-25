@@ -161,7 +161,7 @@
   > lo ≤ hi → lo ≤ midpoint(lo, hi) ≤ hi.
 - **`proof fn lemma_cauchy_schwarz_2d`** — [rational/applications.rs:2871](./src/rational/applications.rs#L2871)
   > (ac + bd)² ≤ (a² + b²)(c² + d²).
-- **`proof fn lemma_cauchy_schwarz_3d`** — [rational/applications.rs:3097](./src/rational/applications.rs#L3097)
+- **`proof fn lemma_cauchy_schwarz_3d`** — [rational/applications.rs:3410](./src/rational/applications.rs#L3410)
   > (a*d + b*e + c*f)² ≤ (a² + b² + c²)(d² + e² + f²).
 
 ## `rational::applications::Rational`
