@@ -1517,6 +1517,144 @@ impl RuntimeRational {
         }
         out
     }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // Exec-level roundtrip / correctness proofs
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /// Exec roundtrip: (a + b) - b ≡ a.
+    pub fn lemma_exec_add_sub_roundtrip(a: &Self, b: &Self) -> (out: Self)
+        requires a.wf_spec(), b.wf_spec(),
+        ensures out.wf_spec(), out@.eqv_spec(a@),
+    {
+        let sum = a.add(b);
+        let out = sum.sub(b);
+        proof {
+            // sum@ == a@.add_spec(b@), out@ == sum@.sub_spec(b@) == a@.add_spec(b@).sub_spec(b@)
+            assert(out@ == a@.add_spec(b@).sub_spec(b@));
+
+            // Need: a@.add_spec(b@).sub_spec(b@).eqv_spec(a@)
+            // Step 1: a+b ≡ b+a
+            RationalModel::lemma_add_commutative(a@, b@);
+
+            // Step 2: (b+a) - b ≡ a  (from lemma_add_then_sub_cancel(b@, a@))
+            RationalModel::lemma_add_then_sub_cancel(b@, a@);
+
+            // Step 3: (a+b) - b ≡ (b+a) - b via sub-congruence
+            RationalModel::lemma_eqv_reflexive(b@);
+            RationalModel::lemma_eqv_sub_congruence(a@.add_spec(b@), b@.add_spec(a@), b@, b@);
+
+            // Step 4: transitivity
+            RationalModel::lemma_eqv_transitive(
+                a@.add_spec(b@).sub_spec(b@),
+                b@.add_spec(a@).sub_spec(b@),
+                a@,
+            );
+        }
+        out
+    }
+
+    /// Exec roundtrip: (a * b) / b ≡ a when b ≢ 0.
+    pub fn lemma_exec_mul_div_roundtrip(a: &Self, b: &Self) -> (out: Self)
+        requires
+            a.wf_spec(),
+            b.wf_spec(),
+            !b@.eqv_spec(RationalModel::from_int_spec(0)),
+        ensures out.wf_spec(), out@.eqv_spec(a@),
+    {
+        let product = a.mul(b);
+        let out = product.div(b);
+        proof {
+            // product@ == a@.mul_spec(b@)
+            // out@ == product@.div_spec(b@) == a@.mul_spec(b@).div_spec(b@)
+            assert(out@ == a@.mul_spec(b@).div_spec(b@));
+            // lemma_div_mul_cancel(a@, b@): a.mul(b).div(b) ≡ a
+            RationalModel::lemma_div_mul_cancel(a@, b@);
+        }
+        out
+    }
+
+    /// Exec roundtrip: (a / b) * b ≡ a when b ≢ 0.
+    pub fn lemma_exec_div_mul_roundtrip(a: &Self, b: &Self) -> (out: Self)
+        requires
+            a.wf_spec(),
+            b.wf_spec(),
+            !b@.eqv_spec(RationalModel::from_int_spec(0)),
+        ensures out.wf_spec(), out@.eqv_spec(a@),
+    {
+        let quotient = a.div(b);
+        let out = quotient.mul(b);
+        proof {
+            // quotient@ == a@.div_spec(b@)
+            // out@ == quotient@.mul_spec(b@) == a@.div_spec(b@).mul_spec(b@)
+            assert(out@ == a@.div_spec(b@).mul_spec(b@));
+
+            // From div's ensures: b@.mul_spec(quotient@).eqv_spec(a@)
+            // i.e. b@.mul(a@.div(b@)) ≡ a@
+            // We need: a@.div(b@).mul(b@) ≡ a@
+            // Use commutativity of mul:
+            RationalModel::lemma_mul_commutative(a@.div_spec(b@), b@);
+            // a@.div(b@).mul(b@) == b@.mul(a@.div(b@))
+            // and the div ensures gives b@.mul(a@.div(b@)) ≡ a@
+            RationalModel::lemma_div_cancel(b@, a@);
+            // b@.mul(a@.div(b@)) ≡ a@
+            RationalModel::lemma_eqv_transitive(
+                a@.div_spec(b@).mul_spec(b@),
+                b@.mul_spec(a@.div_spec(b@)),
+                a@,
+            );
+        }
+        out
+    }
+
+    /// Exec roundtrip: neg(neg(a)) == a (structural equality, not just eqv).
+    pub fn lemma_exec_neg_neg_roundtrip(a: &Self) -> (out: Self)
+        requires a.wf_spec(),
+        ensures out.wf_spec(), out@ == a@,
+    {
+        let neg1 = a.neg();
+        let out = neg1.neg();
+        proof {
+            assert(neg1@ == a@.neg_spec());
+            assert(out@ == neg1@.neg_spec());
+            assert(out@ == a@.neg_spec().neg_spec());
+            RationalModel::lemma_neg_involution(a@);
+            assert(a@.neg_spec().neg_spec() == a@);
+        }
+        out
+    }
+
+    /// from_frac(n, 1) ≡ from_int(n).
+    pub fn lemma_exec_from_frac_from_int_agree(n: i64) -> (pair: (Self, Self))
+        ensures
+            pair.0.wf_spec(),
+            pair.1.wf_spec(),
+            pair.0@.eqv_spec(pair.1@),
+    {
+        let from_frac = Self::from_frac(n, 1);
+        let from_int = Self::from_int(n);
+        proof {
+            // from_frac@ == RationalModel::from_frac_spec(n, 1)
+            // from_int@ == RationalModel::from_int_spec(n)
+            // from_frac_spec(n, 1) with 1 > 0:
+            //   Rational { num: n, den: (1-1) as nat } == Rational { num: n, den: 0 }
+            // from_int_spec(n):
+            //   Rational { num: n, den: 0 }
+            // So they are structurally equal.
+            assert(RationalModel::from_frac_spec(n as int, 1) == RationalModel::from_int_spec(n as int));
+            assert(from_frac@ == from_int@);
+            RationalModel::lemma_eqv_reflexive(from_frac@);
+        }
+        (from_frac, from_int)
+    }
+
+    /// normalize(a) ≡ a (exec-level confirmation).
+    pub fn lemma_exec_normalize_preserves(a: &Self) -> (out: Self)
+        requires a.wf_spec(),
+        ensures out.wf_spec(), out@.eqv_spec(a@),
+    {
+        a.normalize()
+    }
 }
 
 // ── Spec impls for operator traits ──────────────────────────────────────
