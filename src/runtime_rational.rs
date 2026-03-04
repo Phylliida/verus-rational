@@ -46,7 +46,7 @@ pub open spec fn gcd_spec(a: nat, b: nat) -> nat
 ///   - `gcd_spec(a, b) > 0` when `a > 0 || b > 0`
 ///   - `gcd_spec(a, b)` divides `a`  (i.e. `a % g == 0`)
 ///   - `gcd_spec(a, b)` divides `b`  (i.e. `b % g == 0`)
-proof fn lemma_gcd_properties(a: nat, b: nat)
+pub proof fn lemma_gcd_properties(a: nat, b: nat)
     requires
         a > 0 || b > 0,
     ensures
