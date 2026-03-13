@@ -22,6 +22,12 @@ impl Equivalence for Rational {
     proof fn axiom_eqv_transitive(a: Self, b: Self, c: Self) {
         Self::lemma_eqv_transitive(a, b, c);
     }
+
+    proof fn axiom_eq_implies_eqv(a: Self, b: Self) {
+        // Equality of Rational means same value field
+        // eqv_spec checks that the cross products are equal
+        // For equal values, the cross products are trivially equal
+    }
 }
 
 // ── AdditiveCommutativeMonoid ───────────────────────────────────────
