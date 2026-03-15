@@ -13,12 +13,7 @@ use verus_bigint::{RuntimeBigIntWitness, RuntimeBigNatWitness};
 /// `RuntimeBigNatWitness` (denominator).
 ///
 /// The proof model remains in `RationalModel`.
-#[cfg(not(verus_keep_ghost))]
-compile_error!(
-    "verus-rational exposes a single verified implementation; \
-     build with Verus (`cfg(verus_keep_ghost)`, e.g. `cargo verus verify`)"
-);
-
+// Stub type for non-Verus builds (e.g. standalone viewer binaries).
 #[cfg(not(verus_keep_ghost))]
 pub struct RuntimeRational;
 
