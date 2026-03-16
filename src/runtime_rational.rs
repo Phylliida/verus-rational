@@ -2,6 +2,8 @@
 use crate::rational::RationalModel;
 #[cfg(verus_keep_ghost)]
 use vstd::arithmetic::mul::{lemma_mul_basics, lemma_mul_strict_inequality};
+#[cfg(not(verus_keep_ghost))]
+use vstd::prelude::Ghost;
 #[cfg(verus_keep_ghost)]
 use vstd::prelude::*;
 #[cfg(verus_keep_ghost)]
@@ -13,11 +15,6 @@ use verus_bigint::{RuntimeBigIntWitness, RuntimeBigNatWitness};
 /// `RuntimeBigNatWitness` (denominator).
 ///
 /// The proof model remains in `RationalModel`.
-// Stub type for non-Verus builds (e.g. standalone viewer binaries).
-#[cfg(not(verus_keep_ghost))]
-pub struct RuntimeRational;
-
-#[cfg(verus_keep_ghost)]
 verus! {
 
 pub struct RuntimeRational {
