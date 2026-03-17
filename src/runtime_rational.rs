@@ -11,10 +11,6 @@ use vstd::view::View;
 
 use verus_bigint::{RuntimeBigIntWitness, RuntimeBigNatWitness};
 
-/// Runtime rational number backed by `RuntimeBigIntWitness` (numerator) and
-/// `RuntimeBigNatWitness` (denominator).
-///
-/// The proof model remains in `RationalModel`.
 verus! {
 
 pub struct RuntimeRational {
