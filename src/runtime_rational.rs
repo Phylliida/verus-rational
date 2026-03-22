@@ -1332,6 +1332,7 @@ impl RuntimeRational {
         ensures
             out.wf_spec(),
             out@.eqv_spec(self@),
+            out@.normalized_spec(),
     {
         let abs_num = self.numerator.abs();
         let abs_num_copy = abs_num.copy_small_total();
@@ -1341,13 +1342,38 @@ impl RuntimeRational {
         // be ideal, but the current form is valid; skip GCD).
         let num_is_zero = abs_num.is_zero();
         if num_is_zero {
+            // For zero numerator, use spec-level canonical form
+            let ghost canonical_zero = RationalModel::normalize_constructive(self@);
             let out = RuntimeRational {
                 numerator: self.numerator.copy_small_total(),
                 denominator: self.denominator.copy_small_total(),
-                model: Ghost(self@),
+                model: Ghost(canonical_zero),
             };
             proof {
-                RationalModel::lemma_eqv_reflexive(self@);
+                assert(canonical_zero.eqv_spec(self@));
+                assert(canonical_zero.normalized_spec());
+                // wf_spec: numerator.model@ * canonical_zero.denom() == canonical_zero.num * denominator.model@
+                // self@ has num == 0 (since numerator witness is zero and wf_spec relates them)
+                // canonical_zero eqv self@ with self@.num == 0 ⟹ canonical_zero.num == 0
+                // So both sides of cross-multiplication are 0
+                let sn = self.numerator.model@;
+                let sd = self.denominator.model@ as int;
+                assert(sn == 0);
+                // From self.wf_spec: sn * self@.denom() == self@.num * sd
+                // 0 * self@.denom() == self@.num * sd → self@.num * sd == 0
+                // sd > 0 (from wf_spec), so self@.num == 0
+                RationalModel::lemma_denom_positive(self@);
+                assert(self@.num * sd == 0);
+                assert(self@.num == 0) by (nonlinear_arith) requires self@.num * sd == 0, sd > 0;
+                // self@ eqv canonical_zero: self@.num * canonical_zero.denom() == canonical_zero.num * self@.denom()
+                // 0 * canonical_zero.denom() == canonical_zero.num * self@.denom()
+                // canonical_zero.num * self@.denom() == 0
+                RationalModel::lemma_denom_positive(canonical_zero);
+                assert(canonical_zero.num == 0) by (nonlinear_arith)
+                    requires canonical_zero.num * self@.denom() == 0, self@.denom() > 0;
+                // numerator.model@ * canonical_zero.denom() = 0 * canonical_zero.denom() = 0
+                // canonical_zero.num * denominator.model@ = 0 * denominator.model@ = 0
+                assert(out.wf_spec());
             }
             return out;
         }
@@ -1408,26 +1434,27 @@ impl RuntimeRational {
                          new_sd == sd / g_val;
         }
 
-        let ghost new_model = RationalModel {
+        let ghost raw_model = RationalModel {
             num: new_sn,
             den: (new_sd - 1) as nat,
         };
 
+        // Use spec-level normalization to get a model with guaranteed normalized_spec.
+        let ghost canonical = RationalModel::normalize_constructive(self@);
+        // canonical.eqv_spec(self@) && canonical.normalized_spec()
+
         let out = RuntimeRational {
             numerator: new_num,
             denominator: new_den,
-            model: Ghost(new_model),
+            model: Ghost(canonical),
         };
 
         proof {
-            // ── wf_spec: new_sn * new_model.denom() == new_model.num * (new_sd as int) ──
-            // Both sides are new_sn * new_sd since model matches witnesses.
-            assert(new_model.denom() == new_sd as int);
-            assert(new_model.num == new_sn);
-            assert(new_sn * (new_sd as int) == new_sn * (new_sd as int));
-            assert(out.wf_spec());
+            // ── First establish raw_model properties ──
+            assert(raw_model.denom() == new_sd as int);
+            assert(raw_model.num == new_sn);
 
-            // ── eqv_spec: self@.num * new_model.denom() == new_model.num * self@.denom() ──
+            // ── eqv_spec: self@.num * raw_model.denom() == raw_model.num * self@.denom() ──
             // From old wf_spec: sn * d == n * sd  (where sn = self.numerator.model@,
             //   sd = self.denominator.model@, n = self@.num, d = self@.denom())
             // We have: sn = new_sn * g  (with sign), sd = new_sd * g
@@ -1500,8 +1527,33 @@ impl RuntimeRational {
                     sd == (new_sd as int) * g_val as int,
                     g_val > 0;
 
-            assert(n * new_model.denom() == new_model.num * d);
+            assert(n * raw_model.denom() == raw_model.num * d);
+            assert(raw_model.eqv_spec(self@));
+
+            // ── canonical model: normalized_spec + eqv ──
+            // canonical comes from normalize_constructive(self@)
+            assert(canonical.eqv_spec(self@));
+            assert(canonical.normalized_spec());
+
+            // ── wf_spec for canonical model ──
+            // Need: new_sn * canonical.denom() == canonical.num * new_sd
+            // We have: raw_model eqv self@ eqv canonical
+            // raw_model eqv canonical:
+            RationalModel::lemma_eqv_symmetric(canonical, self@);
+            RationalModel::lemma_eqv_transitive(raw_model, self@, canonical);
+            // raw_model.num * canonical.denom() == canonical.num * raw_model.denom()
+            // raw_model.num == new_sn, raw_model.denom() == new_sd
+            assert(raw_model.eqv_spec(canonical));
+            assert(new_sn * (canonical.denom() as int) == canonical.num * (new_sd as int));
+
+            // This is exactly the wf_spec cross-multiplication for model=canonical
+            assert(out.numerator.model@ == new_sn);
+            assert(out.denominator.model@ == new_sd);
+            assert(out@ == canonical);
+
+            assert(out.wf_spec());
             assert(out@.eqv_spec(self@));
+            assert(out@.normalized_spec());
         }
         out
     }
