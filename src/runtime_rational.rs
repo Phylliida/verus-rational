@@ -1342,38 +1342,35 @@ impl RuntimeRational {
         // be ideal, but the current form is valid; skip GCD).
         let num_is_zero = abs_num.is_zero();
         if num_is_zero {
-            // For zero numerator, use spec-level canonical form
-            let ghost canonical_zero = RationalModel::normalize_constructive(self@);
+            // Canonical zero is from_int(0) = Rational { num: 0, den: 0 }
+            let ghost canonical_zero = RationalModel::from_int_spec(0);
             let out = RuntimeRational {
                 numerator: self.numerator.copy_small_total(),
                 denominator: self.denominator.copy_small_total(),
                 model: Ghost(canonical_zero),
             };
             proof {
-                assert(canonical_zero.eqv_spec(self@));
-                assert(canonical_zero.normalized_spec());
-                // wf_spec: numerator.model@ * canonical_zero.denom() == canonical_zero.num * denominator.model@
-                // self@ has num == 0 (since numerator witness is zero and wf_spec relates them)
-                // canonical_zero eqv self@ with self@.num == 0 ⟹ canonical_zero.num == 0
-                // So both sides of cross-multiplication are 0
-                let sn = self.numerator.model@;
-                let sd = self.denominator.model@ as int;
+                RationalModel::lemma_from_int_is_normalized(0);
+                // canonical_zero.normalized_spec() ✓
+
+                // Show self@.num == 0 from wf_spec + numerator witness = 0
+                let sn: int = self.numerator.model@;
+                let sd: int = self.denominator.model@ as int;
                 assert(sn == 0);
-                // From self.wf_spec: sn * self@.denom() == self@.num * sd
-                // 0 * self@.denom() == self@.num * sd → self@.num * sd == 0
-                // sd > 0 (from wf_spec), so self@.num == 0
-                RationalModel::lemma_denom_positive(self@);
-                assert(self@.num * sd == 0);
-                assert(self@.num == 0) by (nonlinear_arith) requires self@.num * sd == 0, sd > 0;
-                // self@ eqv canonical_zero: self@.num * canonical_zero.denom() == canonical_zero.num * self@.denom()
-                // 0 * canonical_zero.denom() == canonical_zero.num * self@.denom()
-                // canonical_zero.num * self@.denom() == 0
-                RationalModel::lemma_denom_positive(canonical_zero);
-                assert(canonical_zero.num == 0) by (nonlinear_arith)
-                    requires canonical_zero.num * self@.denom() == 0, self@.denom() > 0;
-                // numerator.model@ * canonical_zero.denom() = 0 * canonical_zero.denom() = 0
-                // canonical_zero.num * denominator.model@ = 0 * denominator.model@ = 0
-                assert(out.wf_spec());
+                // wf_spec: sn * self@.denom() == self@.num * sd
+                // 0 * self@.denom() == self@.num * sd
+                assert(0 == self@.num * sd) by (nonlinear_arith)
+                    requires sn == 0, sn * self@.denom() == self@.num * sd;
+                assert(sd > 0);
+                assert(self@.num == 0) by (nonlinear_arith)
+                    requires self@.num * sd == 0, sd > 0;
+
+                // eqv: self@.num * canonical_zero.denom() == canonical_zero.num * self@.denom()
+                // 0 * 1 == 0 * self@.denom() → 0 == 0 ✓
+                RationalModel::lemma_eqv_zero_iff_num_zero(self@);
+
+                // wf_spec: numerator.model@ * canonical_zero.denom() == canonical_zero.num * denominator.model@
+                // 0 * 1 == 0 * sd → 0 == 0 ✓
             }
             return out;
         }
