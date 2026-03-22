@@ -32,29 +32,6 @@ impl Rational {
         let norm_c = cc.add_spec(dd);
         let prod = norm_a.mul_spec(norm_c);
 
-        // (ad - bc)² ≥ 0
-        let ad_ = a.mul_spec(d);
-        let bc__ = b.mul_spec(c);
-        let cross = ad_.sub_spec(bc__);
-        Self::lemma_square_le_nonneg(cross);
-        // cross² ≡ (ad)² - 2(ad)(bc) + (bc)²  by square_of_difference
-        Self::lemma_square_of_difference(ad_, bc__);
-
-        // prod - dot² ≡ cross² ≥ 0
-        // This means prod ≥ dot².
-        // The full algebraic proof that prod - dot² ≡ cross² is very involved.
-        // It requires expanding both sides and showing they match.
-        // For now, let me prove this at the numerator cross-multiplication level.
-
-        // Actually, the cleanest proof: show prod ≡ dot² + cross²
-        // Then since cross² ≥ 0, prod ≥ dot².
-
-        // prod = (a²+b²)(c²+d²) = a²c² + a²d² + b²c² + b²d²
-        // dot² = (ac+bd)² = a²c² + 2abcd + b²d²
-        // cross² = (ad-bc)² = a²d² - 2abcd + b²c²
-        // dot² + cross² = a²c² + 2abcd + b²d² + a²d² - 2abcd + b²c²
-        //               = a²c² + a²d² + b²c² + b²d² = prod  ✓
-
         // Strategy: reduce to standard Cauchy-Schwarz in 4 ghost variables.
         // Key observation: dot_sq.denom() == prod.denom() (both = ad²bd²cd²dd²),
         // so le_spec reduces to dot.num² ≤ norm_a.num * norm_c.num.

@@ -360,6 +360,130 @@ impl Rational {
         Self::lemma_eqv_transitive(expr, result, Self::from_int_spec(0));
     }
 
+    /// Helper: completing the square shows w² = (β²-4αγ)·td² where inner=0.
+    proof fn lemma_complete_square(
+        alpha: int, beta: int, gamma: int, tn: int, td_: int,
+    )
+        requires
+            alpha * tn * tn + beta * tn * td_ + gamma * td_ * td_ == 0,
+            td_ > 0,
+        ensures ({
+            let w = 2 * alpha * tn + beta * td_;
+            w * w == (beta * beta - 4 * alpha * gamma) * td_ * td_
+        }),
+    {
+        let ghost inner = alpha * tn * tn + beta * tn * td_ + gamma * td_ * td_;
+        let ghost w = 2 * alpha * tn + beta * td_;
+
+        // w² via FOIL: w = p + q where p = 2αtn, q = βtd
+        let ghost w_sq = w * w;
+        let ghost p = 2 * alpha * tn;
+        let ghost q = beta * td_;
+        let ghost pp = p * p;
+        let ghost pq = p * q;
+        let ghost qq = q * q;
+        assert(w_sq == pp + 2 * pq + qq) by (nonlinear_arith)
+            requires w == p + q, w_sq == w * w,
+                pp == p * p, pq == p * q, qq == q * q;
+        let ghost expand1 = 4 * alpha * alpha * tn * tn;
+        let ghost expand2 = 4 * alpha * beta * tn * td_;
+        let ghost expand3 = beta * beta * td_ * td_;
+        assert(pp == expand1) by (nonlinear_arith)
+            requires pp == p * p, p == 2 * alpha * tn,
+                expand1 == 4 * alpha * alpha * tn * tn;
+        assert(2 * pq == expand2) by (nonlinear_arith)
+            requires pq == p * q, p == 2 * alpha * tn, q == beta * td_,
+                expand2 == 4 * alpha * beta * tn * td_;
+        assert(qq == expand3) by (nonlinear_arith)
+            requires qq == q * q, q == beta * td_,
+                expand3 == beta * beta * td_ * td_;
+        assert(w_sq == expand1 + expand2 + expand3) by (nonlinear_arith)
+            requires w_sq == pp + 2 * pq + qq,
+                pp == expand1, 2 * pq == expand2, qq == expand3;
+
+        // From inner == 0: 4*alpha*(alpha*tn² + beta*tn*td) = -4*alpha*gamma*td²
+        let ghost four_alpha_inner_part = 4 * alpha * (alpha * tn * tn + beta * tn * td_);
+        assert(four_alpha_inner_part == -(4 * alpha * gamma * td_ * td_))
+            by (nonlinear_arith)
+            requires
+                inner == 0,
+                inner == alpha * tn * tn + beta * tn * td_ + gamma * td_ * td_,
+                four_alpha_inner_part == 4 * alpha * (alpha * tn * tn + beta * tn * td_);
+
+        assert(expand1 + expand2 == four_alpha_inner_part) by (nonlinear_arith)
+            requires
+                expand1 == 4 * alpha * alpha * tn * tn,
+                expand2 == 4 * alpha * beta * tn * td_,
+                four_alpha_inner_part == 4 * alpha * (alpha * tn * tn + beta * tn * td_);
+
+        assert(w_sq == expand3 - 4 * alpha * gamma * td_ * td_) by (nonlinear_arith)
+            requires
+                w_sq == expand1 + expand2 + expand3,
+                expand1 + expand2 == four_alpha_inner_part,
+                four_alpha_inner_part == -(4 * alpha * gamma * td_ * td_);
+
+        assert(w_sq == (beta * beta - 4 * alpha * gamma) * td_ * td_)
+            by (nonlinear_arith)
+            requires
+                w_sq == expand3 - 4 * alpha * gamma * td_ * td_,
+                expand3 == beta * beta * td_ * td_;
+    }
+
+    /// Helper: show disc_num * ad_ * cd_ == beta² - 4*alpha*gamma.
+    proof fn lemma_disc_num_relation(
+        an: int, bn: int, cn: int, ad_: int, bd_: int, cd_: int,
+        disc_num: int,
+    )
+        requires
+            disc_num == bn * bn * (ad_ * cd_) + (-(4 * (an * cn))) * (bd_ * bd_),
+            ad_ > 0, bd_ > 0, cd_ > 0,
+        ensures ({
+            let alpha = an * bd_ * cd_;
+            let beta = bn * ad_ * cd_;
+            let gamma = cn * ad_ * bd_;
+            disc_num * ad_ * cd_ == beta * beta - 4 * alpha * gamma
+        }),
+    {
+        let ghost alpha = an * bd_ * cd_;
+        let ghost beta = bn * ad_ * cd_;
+        let ghost gamma = cn * ad_ * bd_;
+
+        let ghost beta_sq = beta * beta;
+        assert(beta_sq == bn * bn * ad_ * ad_ * cd_ * cd_) by (nonlinear_arith)
+            requires beta == bn * ad_ * cd_, beta_sq == beta * beta;
+
+        let ghost four_ag = 4 * alpha * gamma;
+        assert(four_ag == 4 * an * cn * ad_ * bd_ * bd_ * cd_) by (nonlinear_arith)
+            requires alpha == an * bd_ * cd_, gamma == cn * ad_ * bd_,
+                four_ag == 4 * alpha * gamma;
+
+        let ghost dn_flat = bn * bn * ad_ * cd_ - 4 * an * cn * bd_ * bd_;
+        assert(disc_num == dn_flat) by (nonlinear_arith)
+            requires
+                disc_num == bn * bn * (ad_ * cd_) + (-(4 * (an * cn))) * (bd_ * bd_),
+                dn_flat == bn * bn * ad_ * cd_ - 4 * an * cn * bd_ * bd_;
+
+        let ghost part1 = bn * bn * ad_ * cd_ * ad_ * cd_;
+        let ghost part2 = 4 * an * cn * bd_ * bd_ * ad_ * cd_;
+        assert(dn_flat * ad_ * cd_ == part1 - part2) by (nonlinear_arith)
+            requires dn_flat == bn * bn * ad_ * cd_ - 4 * an * cn * bd_ * bd_,
+                part1 == bn * bn * ad_ * cd_ * ad_ * cd_,
+                part2 == 4 * an * cn * bd_ * bd_ * ad_ * cd_;
+        assert(part1 == beta_sq) by (nonlinear_arith)
+            requires
+                part1 == bn * bn * ad_ * cd_ * ad_ * cd_,
+                beta_sq == bn * bn * ad_ * ad_ * cd_ * cd_;
+        assert(part2 == four_ag) by (nonlinear_arith)
+            requires
+                part2 == 4 * an * cn * bd_ * bd_ * ad_ * cd_,
+                four_ag == 4 * an * cn * ad_ * bd_ * bd_ * cd_;
+        assert(disc_num * ad_ * cd_ == beta_sq - four_ag) by (nonlinear_arith)
+            requires
+                disc_num == dn_flat,
+                dn_flat * ad_ * cd_ == part1 - part2,
+                part1 == beta_sq, part2 == four_ag;
+    }
+
     /// If a*t²+b*t+c ≡ 0 and a ≢ 0, then discriminant b²-4ac ≥ 0.
     pub proof fn lemma_discriminant_nonneg_square(a: Self, b: Self, c: Self, t: Self)
         requires
@@ -426,7 +550,6 @@ impl Rational {
         let ghost gamma = cn * ad_ * bd_;
 
         // Step 1: Factor expr.num as td * (alpha*tn² + beta*tn*td + gamma*td²)
-        // Break into three terms
         let ghost t1 = ((an * (tn * tn)) * (bd_ * td_)) * cd_;
         assert(t1 == alpha * tn * tn * td_) by (nonlinear_arith)
             requires t1 == ((an * (tn * tn)) * (bd_ * td_)) * cd_,
@@ -442,7 +565,6 @@ impl Rational {
             requires t3 == cn * ((ad_ * (td_ * td_)) * (bd_ * td_)),
                 gamma == cn * ad_ * bd_;
 
-        // expr.num = t1 + t2 + t3
         assert(expr.num == t1 + t2 + t3) by (nonlinear_arith)
             requires
                 expr.num == (att_bt.num) * cd_ + cn * att_bt.denom(),
@@ -452,7 +574,6 @@ impl Rational {
                 t2 == ((bn * tn) * (ad_ * (td_ * td_))) * cd_,
                 t3 == cn * ((ad_ * (td_ * td_)) * (bd_ * td_));
 
-        // Factor td_: expr.num = td_ * (alpha*tn² + beta*tn*td_ + gamma*td_²)
         let ghost inner = alpha * tn * tn + beta * tn * td_ + gamma * td_ * td_;
         assert(t1 + t2 + t3 == td_ * inner) by (nonlinear_arith)
             requires
@@ -461,119 +582,25 @@ impl Rational {
                 t3 == gamma * td_ * td_ * td_,
                 inner == alpha * tn * tn + beta * tn * td_ + gamma * td_ * td_;
 
-        // Since expr.num == 0 and td_ > 0: inner == 0
         assert(inner == 0) by (nonlinear_arith)
             requires expr.num == 0,
                 expr.num == t1 + t2 + t3,
                 t1 + t2 + t3 == td_ * inner,
                 td_ > 0;
 
-        // Step 2: Completing the square
-        let ghost w = 2 * alpha * tn + beta * td_;
-
-        // w² via FOIL: w = p + q where p = 2αtn, q = βtd
-        let ghost w_sq = w * w;
-        let ghost p = 2 * alpha * tn;
-        let ghost q = beta * td_;
-        let ghost pp = p * p;
-        let ghost pq = p * q;
-        let ghost qq = q * q;
-        assert(w_sq == pp + 2 * pq + qq) by (nonlinear_arith)
-            requires w == p + q, w_sq == w * w,
-                pp == p * p, pq == p * q, qq == q * q;
-        let ghost expand1 = 4 * alpha * alpha * tn * tn;
-        let ghost expand2 = 4 * alpha * beta * tn * td_;
-        let ghost expand3 = beta * beta * td_ * td_;
-        assert(pp == expand1) by (nonlinear_arith)
-            requires pp == p * p, p == 2 * alpha * tn,
-                expand1 == 4 * alpha * alpha * tn * tn;
-        assert(2 * pq == expand2) by (nonlinear_arith)
-            requires pq == p * q, p == 2 * alpha * tn, q == beta * td_,
-                expand2 == 4 * alpha * beta * tn * td_;
-        assert(qq == expand3) by (nonlinear_arith)
-            requires qq == q * q, q == beta * td_,
-                expand3 == beta * beta * td_ * td_;
-        assert(w_sq == expand1 + expand2 + expand3) by (nonlinear_arith)
-            requires w_sq == pp + 2 * pq + qq,
-                pp == expand1, 2 * pq == expand2, qq == expand3;
-
-        // From inner == 0: 4*alpha*(alpha*tn² + beta*tn*td) = -4*alpha*gamma*td²
-        let ghost four_alpha_inner_part = 4 * alpha * (alpha * tn * tn + beta * tn * td_);
-        assert(four_alpha_inner_part == -(4 * alpha * gamma * td_ * td_))
-            by (nonlinear_arith)
-            requires
-                inner == 0,
-                inner == alpha * tn * tn + beta * tn * td_ + gamma * td_ * td_,
-                four_alpha_inner_part == 4 * alpha * (alpha * tn * tn + beta * tn * td_);
-
-        assert(expand1 + expand2 == four_alpha_inner_part) by (nonlinear_arith)
-            requires
-                expand1 == 4 * alpha * alpha * tn * tn,
-                expand2 == 4 * alpha * beta * tn * td_,
-                four_alpha_inner_part == 4 * alpha * (alpha * tn * tn + beta * tn * td_);
-
-        assert(w_sq == expand3 - 4 * alpha * gamma * td_ * td_) by (nonlinear_arith)
-            requires
-                w_sq == expand1 + expand2 + expand3,
-                expand1 + expand2 == four_alpha_inner_part,
-                four_alpha_inner_part == -(4 * alpha * gamma * td_ * td_);
-
-        assert(w_sq == (beta * beta - 4 * alpha * gamma) * td_ * td_)
-            by (nonlinear_arith)
-            requires
-                w_sq == expand3 - 4 * alpha * gamma * td_ * td_,
-                expand3 == beta * beta * td_ * td_;
-
-        // Step 3: Show disc_num * ad_ * cd_ == beta² - 4*alpha*gamma
-        // beta² = bn²*ad²*cd²
-        let ghost beta_sq = beta * beta;
-        assert(beta_sq == bn * bn * ad_ * ad_ * cd_ * cd_) by (nonlinear_arith)
-            requires beta == bn * ad_ * cd_, beta_sq == beta * beta;
-
-        // 4*alpha*gamma = 4*an*cn*ad*bd²*cd
-        let ghost four_ag = 4 * alpha * gamma;
-        assert(four_ag == 4 * an * cn * ad_ * bd_ * bd_ * cd_) by (nonlinear_arith)
-            requires alpha == an * bd_ * cd_, gamma == cn * ad_ * bd_,
-                four_ag == 4 * alpha * gamma;
-
-        // First simplify disc_num to a flat form
-        let ghost dn_flat = bn * bn * ad_ * cd_ - 4 * an * cn * bd_ * bd_;
-        assert(disc_num == dn_flat) by (nonlinear_arith)
-            requires
-                disc_num == bn * bn * (ad_ * cd_) + (-(4 * (an * cn))) * (bd_ * bd_),
-                dn_flat == bn * bn * ad_ * cd_ - 4 * an * cn * bd_ * bd_;
-
-        // Now show dn_flat * ad_ * cd_ == beta_sq - four_ag
-        // Split: dn_flat * ad_ * cd_ = bn²*ad_*cd_*ad_*cd_ - 4*an*cn*bd²*ad_*cd_
-        let ghost part1 = bn * bn * ad_ * cd_ * ad_ * cd_;
-        let ghost part2 = 4 * an * cn * bd_ * bd_ * ad_ * cd_;
-        assert(dn_flat * ad_ * cd_ == part1 - part2) by (nonlinear_arith)
-            requires dn_flat == bn * bn * ad_ * cd_ - 4 * an * cn * bd_ * bd_,
-                part1 == bn * bn * ad_ * cd_ * ad_ * cd_,
-                part2 == 4 * an * cn * bd_ * bd_ * ad_ * cd_;
-        assert(part1 == beta_sq) by (nonlinear_arith)
-            requires
-                part1 == bn * bn * ad_ * cd_ * ad_ * cd_,
-                beta_sq == bn * bn * ad_ * ad_ * cd_ * cd_;
-        assert(part2 == four_ag) by (nonlinear_arith)
-            requires
-                part2 == 4 * an * cn * bd_ * bd_ * ad_ * cd_,
-                four_ag == 4 * an * cn * ad_ * bd_ * bd_ * cd_;
-        assert(disc_num * ad_ * cd_ == beta_sq - four_ag) by (nonlinear_arith)
-            requires
-                disc_num == dn_flat,
-                dn_flat * ad_ * cd_ == part1 - part2,
-                part1 == beta_sq, part2 == four_ag;
+        // Steps 2-3: completing the square + disc_num relationship (via helpers)
+        Self::lemma_complete_square(alpha, beta, gamma, tn, td_);
+        Self::lemma_disc_num_relation(an, bn, cn, ad_, bd_, cd_, disc_num);
 
         // Step 4: Conclude disc_num ≥ 0
+        let ghost w = 2 * alpha * tn + beta * td_;
+        let ghost w_sq = w * w;
         assert(w_sq >= 0int) by (nonlinear_arith)
             requires w_sq == w * w;
         assert(disc_num * (ad_ * cd_ * td_ * td_) >= 0) by (nonlinear_arith)
             requires
                 w_sq == (beta * beta - 4 * alpha * gamma) * td_ * td_,
-                disc_num * ad_ * cd_ == beta_sq - four_ag,
-                beta_sq == beta * beta,
-                four_ag == 4 * alpha * gamma,
+                disc_num * ad_ * cd_ == beta * beta - 4 * alpha * gamma,
                 w_sq >= 0int;
         assert(disc_num >= 0) by (nonlinear_arith)
             requires
