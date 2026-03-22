@@ -15,6 +15,9 @@ pub mod signum;
 pub mod ordering;
 pub mod division;
 pub mod applications;
+pub mod cramer;
+pub mod quadratic;
+pub mod cauchy_schwarz;
 pub mod horner;
 pub mod algebra;
 
