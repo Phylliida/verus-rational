@@ -44,10 +44,8 @@ impl Rational {
         Self::lemma_sub_eqv_zero_iff_eqv(a.mul_spec(d), b.mul_spec(c));
     }
 
-    /// Cramer's rule: when det ≢ 0, the solution
-    /// x = (d*e - b*f)/det, y = (a*f - c*e)/det
-    /// satisfies a*x + b*y ≡ e and c*x + d*y ≡ f.
-    pub proof fn lemma_cramer2_satisfies(
+    /// Helper for Cramer's rule: proves a*x + b*y ≡ e.
+    proof fn lemma_cramer2_eq1(
         a: Self, b: Self, c: Self, d: Self, e: Self, f: Self,
     )
         requires
@@ -57,7 +55,6 @@ impl Rational {
             let x = d.mul_spec(e).sub_spec(b.mul_spec(f)).div_spec(det);
             let y = a.mul_spec(f).sub_spec(c.mul_spec(e)).div_spec(det);
             a.mul_spec(x).add_spec(b.mul_spec(y)).eqv_spec(e)
-            && c.mul_spec(x).add_spec(d.mul_spec(y)).eqv_spec(f)
         }),
     {
         let det = Self::det2_spec(a, b, c, d);
@@ -429,22 +426,45 @@ impl Rational {
         );
         // Cancel det: ax + by ≡ e
         Self::lemma_mul_cancel_left(sum, e, det);
+    }
 
-        // === Second equation: c*x + d*y ≡ f ===
-        // By exact same argument with c,d,f instead of a,b,e.
-        // c*num_x + d*num_y = c*(de-bf) + d*(af-ce)
-        //   = cde - cbf + daf - dce
-        //   = daf - cbf + cde - dce  ... rearranging
-        //   = f*(da - cb) + e*(cd - dc)
-        //   Hmm, that doesn't simplify nicely.
-        // Actually: c*(de-bf) + d*(af-ce)
-        //   = cde - cbf + daf - dce
-        //   = daf - cbf + cde - dce  ... no
-        // Let me redo: = c*d*e - c*b*f + d*a*f - d*c*e
-        //              = (c*d*e - d*c*e) + (d*a*f - c*b*f)
-        //              = 0 + (da - cb)*f
-        //              = (ad - bc)*f  (since da=ad, cb=bc by commut)
-        //              = det * f
+    /// Helper for Cramer's rule: proves c*x + d*y ≡ f.
+    proof fn lemma_cramer2_eq2(
+        a: Self, b: Self, c: Self, d: Self, e: Self, f: Self,
+    )
+        requires
+            !Self::det2_spec(a, b, c, d).eqv_spec(Self::from_int_spec(0)),
+        ensures ({
+            let det = Self::det2_spec(a, b, c, d);
+            let x = d.mul_spec(e).sub_spec(b.mul_spec(f)).div_spec(det);
+            let y = a.mul_spec(f).sub_spec(c.mul_spec(e)).div_spec(det);
+            c.mul_spec(x).add_spec(d.mul_spec(y)).eqv_spec(f)
+        }),
+    {
+        let det = Self::det2_spec(a, b, c, d);
+        let num_x = d.mul_spec(e).sub_spec(b.mul_spec(f));
+        let num_y = a.mul_spec(f).sub_spec(c.mul_spec(e));
+        let x = num_x.div_spec(det);
+        let y = num_y.div_spec(det);
+
+        Self::lemma_eqv_zero_iff_num_zero(det);
+
+        // x = num_x / det, so det * x ≡ num_x
+        Self::lemma_div_cancel(det, num_x);
+        // det * x ≡ num_x = d*e - b*f
+
+        // y = num_y / det, so det * y ≡ num_y
+        Self::lemma_div_cancel(det, num_y);
+
+        let de = d.mul_spec(e);
+        let bf = b.mul_spec(f);
+        let af = a.mul_spec(f);
+        let ce = c.mul_spec(e);
+        let ad = a.mul_spec(d);
+        let bc_ = b.mul_spec(c);
+
+        Self::lemma_sub_mul_right(de, bf, c);
+        Self::lemma_sub_mul_right(af, ce, d);
 
         // So same structure. Let me do it.
         let cx = c.mul_spec(x);
@@ -628,6 +648,26 @@ impl Rational {
         Self::lemma_div_mul_cancel(e, det);
         Self::lemma_mul_commutative(f, det);
         Self::lemma_div_mul_cancel(f, det);
+    }
+
+    /// Cramer's rule: when det ≢ 0, the solution
+    /// x = (d*e - b*f)/det, y = (a*f - c*e)/det
+    /// satisfies a*x + b*y ≡ e and c*x + d*y ≡ f.
+    pub proof fn lemma_cramer2_satisfies(
+        a: Self, b: Self, c: Self, d: Self, e: Self, f: Self,
+    )
+        requires
+            !Self::det2_spec(a, b, c, d).eqv_spec(Self::from_int_spec(0)),
+        ensures ({
+            let det = Self::det2_spec(a, b, c, d);
+            let x = d.mul_spec(e).sub_spec(b.mul_spec(f)).div_spec(det);
+            let y = a.mul_spec(f).sub_spec(c.mul_spec(e)).div_spec(det);
+            a.mul_spec(x).add_spec(b.mul_spec(y)).eqv_spec(e)
+            && c.mul_spec(x).add_spec(d.mul_spec(y)).eqv_spec(f)
+        }),
+    {
+        Self::lemma_cramer2_eq1(a, b, c, d, e, f);
+        Self::lemma_cramer2_eq2(a, b, c, d, e, f);
     }
 
 }
