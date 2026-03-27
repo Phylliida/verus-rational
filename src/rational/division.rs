@@ -603,6 +603,107 @@ impl Rational {
                 ra.num == -a.denom(), ra.denom() == -a.num;
     }
 
+    /// (x/a)/b ≡ x/(a*b) when a ≢ 0 and b ≢ 0.
+    pub proof fn lemma_div_div(x: Self, a: Self, b: Self)
+        requires
+            !a.eqv_spec(Self::from_int_spec(0)),
+            !b.eqv_spec(Self::from_int_spec(0)),
+        ensures
+            x.div_spec(a).div_spec(b).eqv_spec(x.div_spec(a.mul_spec(b))),
+    {
+        // (x/a)/b = x*inv(a)*inv(b) and x/(a*b) = x*inv(a*b)
+        // inv(a*b) ≡ inv(a)*inv(b) by reciprocal_of_product
+        // So x*inv(a)*inv(b) ≡ x*inv(a*b)
+        Self::lemma_eqv_zero_iff_num_zero(a);
+        Self::lemma_eqv_zero_iff_num_zero(b);
+        Self::lemma_reciprocal_of_product(a, b);
+        let inv_a = a.reciprocal_spec();
+        let inv_b = b.reciprocal_spec();
+        let inv_ab = a.mul_spec(b).reciprocal_spec();
+        // x/a = x * inv_a. (x/a)/b = (x * inv_a) * inv_b
+        let xa = x.mul_spec(inv_a);
+        let lhs = xa.mul_spec(inv_b);
+        // x/(a*b) = x * inv(a*b) ≡ x * (inv_a * inv_b)
+        let rhs = x.mul_spec(inv_ab);
+        // lhs = x * inv_a * inv_b = (by assoc) x * (inv_a * inv_b)
+        Self::lemma_mul_associative(x, inv_a, inv_b);
+        // x.mul(inv_a).mul(inv_b) ≡ x.mul(inv_a.mul(inv_b))
+        // inv_ab ≡ inv_a * inv_b [reciprocal_of_product]
+        // So x * inv_ab ≡ x * (inv_a * inv_b) [congruence]
+        // And x * inv_a * inv_b ≡ x * (inv_a * inv_b) [associativity]
+        // Transitivity: lhs ≡ x * (inv_a * inv_b) ≡ rhs
+        let mid = x.mul_spec(inv_a.mul_spec(inv_b));
+        // lhs ≡ mid from associativity
+        // rhs ≡ mid? Need: x * inv_ab ≡ x * (inv_a * inv_b)
+        // from inv_ab ≡ inv_a * inv_b: congruence gives x * inv_ab ≡ x * (inv_a * inv_b)
+        // mul_congruence: a ≡ b → c*a ≡ c*b
+        // But we need the eqv-congruence for mul_spec.
+        // For Rational: a ≡ b means a.num * b.denom() == b.num * a.denom()
+        // (x*a).num = x.num * a.num, (x*b).num = x.num * b.num
+        // (x*a).denom() = x.denom() * a.denom(), (x*b).denom() = x.denom() * b.denom()
+        // x*a ≡ x*b iff x.num*a.num * x.denom()*b.denom() == x.num*b.num * x.denom()*a.denom()
+        // Factor: x.num * x.denom() * (a.num * b.denom()) == x.num * x.denom() * (b.num * a.denom())
+        // Which is a.num * b.denom() == b.num * a.denom() i.e. a ≡ b. ✓
+        // rhs = x * inv_ab, mid = x * (inv_a * inv_b)
+        // inv_ab ≡ inv_a * inv_b [reciprocal_of_product]
+        // So rhs ≡ mid by mul-congruence (same x, eqv second arg)
+        assert(inv_ab.num * (inv_a.mul_spec(inv_b).den + 1)
+            == inv_a.mul_spec(inv_b).num * (inv_ab.den + 1));
+        let inv_a_inv_b = inv_a.mul_spec(inv_b);
+        assert(rhs.num == x.num * inv_ab.num);
+        assert(mid.num == x.num * inv_a_inv_b.num);
+        assert(rhs.den == x.den * inv_ab.den + x.den + inv_ab.den);
+        assert(mid.den == x.den * inv_a_inv_b.den + x.den + inv_a_inv_b.den);
+        assert((rhs.den + 1) == (x.den + 1) * (inv_ab.den + 1)) by (nonlinear_arith)
+            requires rhs.den == x.den * inv_ab.den + x.den + inv_ab.den;
+        assert((mid.den + 1) == (x.den + 1) * (inv_a_inv_b.den + 1)) by (nonlinear_arith)
+            requires mid.den == x.den * inv_a_inv_b.den + x.den + inv_a_inv_b.den;
+        assert(rhs.eqv_spec(mid)) by (nonlinear_arith)
+            requires
+                inv_ab.num * (inv_a_inv_b.den + 1) == inv_a_inv_b.num * (inv_ab.den + 1),
+                rhs.num == x.num * inv_ab.num,
+                mid.num == x.num * inv_a_inv_b.num,
+                (rhs.den + 1) == (x.den + 1) * (inv_ab.den + 1),
+                (mid.den + 1) == (x.den + 1) * (inv_a_inv_b.den + 1);
+        Self::lemma_eqv_transitive(lhs, mid, rhs);
+        Self::lemma_eqv_symmetric(lhs, rhs);
+    }
+
+    /// Congruence for div: a ≡ b → a/c ≡ b/c when c ≢ 0.
+    pub proof fn lemma_div_congruence(a: Self, b: Self, c: Self)
+        requires
+            a.eqv_spec(b),
+            !c.eqv_spec(Self::from_int_spec(0)),
+        ensures
+            a.div_spec(c).eqv_spec(b.div_spec(c)),
+    {
+        let inv_c = c.reciprocal_spec();
+        let lhs = a.mul_spec(inv_c);
+        let rhs = b.mul_spec(inv_c);
+        // a ≡ b means a.num * b.denom() == b.num * a.denom()
+        assert(a.num * (b.den + 1) == b.num * (a.den + 1));
+        // lhs ≡ rhs: cross-multiply through inv_c
+        assert(lhs.num == a.num * inv_c.num);
+        assert(rhs.num == b.num * inv_c.num);
+        // denom of mul_spec: (x*y).denom() = x.denom() * y.denom()
+        assert(lhs.den == a.den * inv_c.den + a.den + inv_c.den);
+        assert(rhs.den == b.den * inv_c.den + b.den + inv_c.den);
+        assert((lhs.den + 1) == (a.den + 1) * (inv_c.den + 1)) by (nonlinear_arith)
+            requires lhs.den == a.den * inv_c.den + a.den + inv_c.den;
+        assert((rhs.den + 1) == (b.den + 1) * (inv_c.den + 1)) by (nonlinear_arith)
+            requires rhs.den == b.den * inv_c.den + b.den + inv_c.den;
+        // eqv: lhs.num * rhs.denom() == rhs.num * lhs.denom()
+        // = a.num * inv_c.num * (b.den+1) * (inv_c.den+1)
+        //   == b.num * inv_c.num * (a.den+1) * (inv_c.den+1)
+        // Factor out inv_c.num * (inv_c.den+1):
+        assert(lhs.num * (rhs.den + 1) == rhs.num * (lhs.den + 1)) by (nonlinear_arith)
+            requires
+                a.num * (b.den + 1) == b.num * (a.den + 1),
+                lhs.num == a.num * inv_c.num,
+                rhs.num == b.num * inv_c.num,
+                (lhs.den + 1) == (a.den + 1) * (inv_c.den + 1),
+                (rhs.den + 1) == (b.den + 1) * (inv_c.den + 1);
+    }
 }
 
 } // verus!
