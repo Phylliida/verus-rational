@@ -4,7 +4,7 @@ use vstd::prelude::*;
 verus! {
 
 impl Rational {
-    // ── Cauchy-Schwarz squared form ─────────────────────────
+    //  ── Cauchy-Schwarz squared form ─────────────────────────
 
     pub proof fn lemma_cauchy_schwarz_2d(a: Self, b: Self, c: Self, d: Self)
         ensures
@@ -14,11 +14,11 @@ impl Rational {
                     a.mul_spec(a).add_spec(b.mul_spec(b)).mul_spec(
                         c.mul_spec(c).add_spec(d.mul_spec(d)))),
     {
-        // Cauchy-Schwarz: (ac+bd)² ≤ (a²+b²)(c²+d²)
-        // Equivalently: (a²+b²)(c²+d²) - (ac+bd)² ≥ 0
-        // Expansion: a²c² + a²d² + b²c² + b²d² - a²c² - 2abcd - b²d² = a²d² - 2abcd + b²c²
-        // = (ad - bc)² ≥ 0
-        // So this reduces to proving (ad - bc)² ≥ 0, which is lemma_square_le_nonneg.
+        //  Cauchy-Schwarz: (ac+bd)² ≤ (a²+b²)(c²+d²)
+        //  Equivalently: (a²+b²)(c²+d²) - (ac+bd)² ≥ 0
+        //  Expansion: a²c² + a²d² + b²c² + b²d² - a²c² - 2abcd - b²d² = a²d² - 2abcd + b²c²
+        //  = (ad - bc)² ≥ 0
+        //  So this reduces to proving (ad - bc)² ≥ 0, which is lemma_square_le_nonneg.
 
         let ac = a.mul_spec(c);
         let bd = b.mul_spec(d);
@@ -32,11 +32,11 @@ impl Rational {
         let norm_c = cc.add_spec(dd);
         let prod = norm_a.mul_spec(norm_c);
 
-        // Strategy: reduce to standard Cauchy-Schwarz in 4 ghost variables.
-        // Key observation: dot_sq.denom() == prod.denom() (both = ad²bd²cd²dd²),
-        // so le_spec reduces to dot.num² ≤ norm_a.num * norm_c.num.
+        //  Strategy: reduce to standard Cauchy-Schwarz in 4 ghost variables.
+        //  Key observation: dot_sq.denom() == prod.denom() (both = ad²bd²cd²dd²),
+        //  so le_spec reduces to dot.num² ≤ norm_a.num * norm_c.num.
 
-        // Establish denom products
+        //  Establish denom products
         Self::lemma_mul_denom_product_int(a, c);
         Self::lemma_mul_denom_product_int(b, d);
         Self::lemma_mul_denom_product_int(a, a);
@@ -62,13 +62,13 @@ impl Rational {
         let ghost cd_ = c.denom();
         let ghost dd_ = d.denom();
 
-        // Ghost variables for the Cauchy-Schwarz reduction
+        //  Ghost variables for the Cauchy-Schwarz reduction
         let ghost x1 = an * bd_;
         let ghost x2 = bn * ad_;
         let ghost y1 = cn * dd_;
         let ghost y2 = dn * cd_;
 
-        // dot.num = x1*y1 + x2*y2 (break into two product identities)
+        //  dot.num = x1*y1 + x2*y2 (break into two product identities)
         let ghost p1 = (an * cn) * (bd_ * dd_);
         let ghost p2 = (bn * dn) * (ad_ * cd_);
         assert(p1 == x1 * y1) by (nonlinear_arith)
@@ -82,44 +82,44 @@ impl Rational {
                 dot.num == p1 + p2,
                 p1 == x1 * y1, p2 == x2 * y2;
 
-        // norm_a.num = x1² + x2²
+        //  norm_a.num = x1² + x2²
         assert(norm_a.num == x1 * x1 + x2 * x2) by (nonlinear_arith)
             requires
                 norm_a.num == (an * an) * (bd_ * bd_) + (bn * bn) * (ad_ * ad_),
                 x1 == an * bd_, x2 == bn * ad_;
 
-        // norm_c.num = y1² + y2²
+        //  norm_c.num = y1² + y2²
         assert(norm_c.num == y1 * y1 + y2 * y2) by (nonlinear_arith)
             requires
                 norm_c.num == (cn * cn) * (dd_ * dd_) + (dn * dn) * (cd_ * cd_),
                 y1 == cn * dd_, y2 == dn * cd_;
 
-        // Cauchy-Schwarz: (x1y1+x2y2)² ≤ (x1²+x2²)(y1²+y2²)
-        // Proof: RHS - LHS = (x1y2 - x2y1)² ≥ 0
+        //  Cauchy-Schwarz: (x1y1+x2y2)² ≤ (x1²+x2²)(y1²+y2²)
+        //  Proof: RHS - LHS = (x1y2 - x2y1)² ≥ 0
         let ghost z = x1 * y2 - x2 * y1;
         assert(z * z >= 0int) by (nonlinear_arith)
             requires z == x1 * y2 - x2 * y1;
-        // Lagrange identity via aij = xi*yj decomposition
+        //  Lagrange identity via aij = xi*yj decomposition
         let ghost a11 = x1 * y1;
         let ghost a12 = x1 * y2;
         let ghost a21 = x2 * y1;
         let ghost a22 = x2 * y2;
-        // (x1²+x2²)(y1²+y2²) = a11²+a12²+a21²+a22² via distribution
+        //  (x1²+x2²)(y1²+y2²) = a11²+a12²+a21²+a22² via distribution
         let ghost x1sq = x1 * x1;
         let ghost x2sq = x2 * x2;
-        // x1² * nc = a11² + a12²
+        //  x1² * nc = a11² + a12²
         assert(x1sq * norm_c.num == a11 * a11 + a12 * a12) by (nonlinear_arith)
             requires
                 norm_c.num == y1 * y1 + y2 * y2,
                 x1sq == x1 * x1,
                 a11 == x1 * y1, a12 == x1 * y2;
-        // x2² * nc = a21² + a22²
+        //  x2² * nc = a21² + a22²
         assert(x2sq * norm_c.num == a21 * a21 + a22 * a22) by (nonlinear_arith)
             requires
                 norm_c.num == y1 * y1 + y2 * y2,
                 x2sq == x2 * x2,
                 a21 == x2 * y1, a22 == x2 * y2;
-        // na * nc = (x1²+x2²)*nc = x1²*nc + x2²*nc
+        //  na * nc = (x1²+x2²)*nc = x1²*nc + x2²*nc
         assert(norm_a.num * norm_c.num == a11 * a11 + a12 * a12 + a21 * a21 + a22 * a22)
             by (nonlinear_arith)
             requires
@@ -127,12 +127,12 @@ impl Rational {
                 x1sq * norm_c.num == a11 * a11 + a12 * a12,
                 x2sq * norm_c.num == a21 * a21 + a22 * a22,
                 x1sq == x1 * x1, x2sq == x2 * x2;
-        // a11*a22 == a12*a21 (both = x1*x2*y1*y2)
+        //  a11*a22 == a12*a21 (both = x1*x2*y1*y2)
         assert(a11 * a22 == a12 * a21) by (nonlinear_arith)
             requires
                 a11 == x1 * y1, a12 == x1 * y2,
                 a21 == x2 * y1, a22 == x2 * y2;
-        // dot² + z² = (a11+a22)² + (a12-a21)² = a11²+a12²+a21²+a22² + 2(a11*a22-a12*a21)
+        //  dot² + z² = (a11+a22)² + (a12-a21)² = a11²+a12²+a21²+a22² + 2(a11*a22-a12*a21)
         let ghost dot_sq_val = dot.num * dot.num;
         let ghost sum_sq = a11 * a11 + a12 * a12 + a21 * a21 + a22 * a22;
         assert(dot_sq_val + z * z == sum_sq) by (nonlinear_arith)
@@ -149,8 +149,8 @@ impl Rational {
                 norm_a.num * norm_c.num == sum_sq,
                 z * z >= 0int;
 
-        // Show dot_sq.denom() == prod.denom()
-        // Both equal ad²bd²cd²dd² (just different parenthesization)
+        //  Show dot_sq.denom() == prod.denom()
+        //  Both equal ad²bd²cd²dd² (just different parenthesization)
         let ghost D1 = ad_ * cd_;
         let ghost D2 = bd_ * dd_;
         let ghost D1sq = D1 * D1;
@@ -187,7 +187,7 @@ impl Rational {
                 prod.denom() == na_d * nc_d,
                 D1sq * D2sq == na_d * nc_d;
 
-        // prod.denom() > 0
+        //  prod.denom() > 0
         assert(prod.denom() > 0) by (nonlinear_arith)
             requires
                 prod.denom() == na_d * nc_d,
@@ -195,9 +195,9 @@ impl Rational {
                 nc_d == cd_ * cd_ * (dd_ * dd_),
                 ad_ > 0, bd_ > 0, cd_ > 0, dd_ > 0;
 
-        // Final: since dot_sq.denom() == prod.denom() and
-        // dot.num² ≤ norm_a.num * norm_c.num,
-        // we get dot_sq.num * prod.denom() ≤ prod.num * dot_sq.denom()
+        //  Final: since dot_sq.denom() == prod.denom() and
+        //  dot.num² ≤ norm_a.num * norm_c.num,
+        //  we get dot_sq.num * prod.denom() ≤ prod.num * dot_sq.denom()
         assert(dot_sq.num * prod.denom() <= prod.num * dot_sq.denom())
             by (nonlinear_arith)
             requires
@@ -208,7 +208,7 @@ impl Rational {
                 prod.denom() > 0;
     }
 
-    /// Helper: norm.num == v1² + v2² + v3² given rational add/mul structure.
+    ///  Helper: norm.num == v1² + v2² + v3² given rational add/mul structure.
     proof fn lemma_norm_num_sum_squares_3d(
         norm_num: int, ab_num: int, ab_D: int,
         xn: int, yn: int, zn: int,
@@ -254,7 +254,7 @@ impl Rational {
                 t1 == v1 * v1, t2 == v2 * v2, t3 == v3 * v3;
     }
 
-    /// Helper: Lagrange identity — dot² + z1² + z2² + z3² = sum of all aij².
+    ///  Helper: Lagrange identity — dot² + z1² + z2² + z3² = sum of all aij².
     proof fn lemma_lagrange_identity_3d(
         a11: int, a12: int, a13: int,
         a21: int, a22: int, a23: int,
@@ -326,7 +326,7 @@ impl Rational {
         assert(z3*z3 >= 0int) by (nonlinear_arith);
     }
 
-    /// Integer Cauchy-Schwarz: (x1y1+x2y2+x3y3)² ≤ (x1²+x2²+x3²)(y1²+y2²+y3²).
+    ///  Integer Cauchy-Schwarz: (x1y1+x2y2+x3y3)² ≤ (x1²+x2²+x3²)(y1²+y2²+y3²).
     proof fn lemma_cauchy_schwarz_int_3d(
         norm_l_num: int, norm_r_num: int, dot_num: int,
         x1: int, x2: int, x3: int,
@@ -356,7 +356,7 @@ impl Rational {
         let ghost y2sq = y2 * y2;
         let ghost y3sq = y3 * y3;
 
-        // Distribution: decompose xi² * yj² = aij² first, then combine
+        //  Distribution: decompose xi² * yj² = aij² first, then combine
         assert(x1sq * y1sq == a11*a11) by (nonlinear_arith)
             requires x1sq == x1*x1, y1sq == y1*y1, a11 == x1*y1;
         assert(x1sq * y2sq == a12*a12) by (nonlinear_arith)
@@ -406,7 +406,7 @@ impl Rational {
                     + a21*a21 + a22*a22 + a23*a23
                     + a31*a31 + a32*a32 + a33*a33;
 
-        // Cross equalities
+        //  Cross equalities
         assert(a11 * a22 == a12 * a21) by (nonlinear_arith)
             requires a11==x1*y1, a22==x2*y2, a12==x1*y2, a21==x2*y1;
         assert(a11 * a33 == a13 * a31) by (nonlinear_arith)
@@ -414,12 +414,12 @@ impl Rational {
         assert(a22 * a33 == a23 * a32) by (nonlinear_arith)
             requires a22==x2*y2, a33==x3*y3, a23==x2*y3, a32==x3*y2;
 
-        // Lagrange identity
+        //  Lagrange identity
         Self::lemma_lagrange_identity_3d(
             a11, a12, a13, a21, a22, a23, a31, a32, a33, dot_num,
         );
 
-        // Final: dot² ≤ norm_l * norm_r
+        //  Final: dot² ≤ norm_l * norm_r
         assert(dot_num * dot_num <= norm_l_num * norm_r_num) by (nonlinear_arith)
             requires
                 dot_num * dot_num + (a12 - a21)*(a12 - a21)
@@ -436,7 +436,7 @@ impl Rational {
                 (a23 - a32)*(a23 - a32) >= 0int;
     }
 
-    /// Helper: ((da*dd_)*(db*de)*(dc*df))² == (da²*db²*dc²)*(dd_²*de²*df²).
+    ///  Helper: ((da*dd_)*(db*de)*(dc*df))² == (da²*db²*dc²)*(dd_²*de²*df²).
     proof fn lemma_denom_sq_three_factors(
         da: int, db: int, dc: int, dd_: int, de: int, df: int,
     )
@@ -521,7 +521,7 @@ impl Rational {
                 nl_d * nr_d == g1s * g2s * g3s;
     }
 
-    /// (a*d + b*e + c*f)² ≤ (a² + b² + c²)(d² + e² + f²).
+    ///  (a*d + b*e + c*f)² ≤ (a² + b² + c²)(d² + e² + f²).
     pub proof fn lemma_cauchy_schwarz_3d(
         a: Self, b: Self, c: Self, d: Self, e: Self, f: Self,
     )
@@ -534,7 +534,7 @@ impl Rational {
                         .mul_spec(
                             d.mul_spec(d).add_spec(e.mul_spec(e)).add_spec(f.mul_spec(f)))),
     {
-        // Build the dot product: dot = a*d + b*e + c*f
+        //  Build the dot product: dot = a*d + b*e + c*f
         let ad_ = a.mul_spec(d);
         let be = b.mul_spec(e);
         let cf = c.mul_spec(f);
@@ -542,7 +542,7 @@ impl Rational {
         let dot = ad_be.add_spec(cf);
         let dot_sq = dot.mul_spec(dot);
 
-        // Build the norms
+        //  Build the norms
         let aa = a.mul_spec(a);
         let bb = b.mul_spec(b);
         let cc = c.mul_spec(c);
@@ -555,7 +555,7 @@ impl Rational {
         let norm_r = dd_ee.add_spec(ff);
         let prod = norm_l.mul_spec(norm_r);
 
-        // Establish denom products
+        //  Establish denom products
         Self::lemma_mul_denom_product_int(a, d);
         Self::lemma_mul_denom_product_int(b, e);
         Self::lemma_mul_denom_product_int(c, f);
@@ -593,7 +593,7 @@ impl Rational {
         let ghost de = e.denom();
         let ghost df = f.denom();
 
-        // Ghost variables for the 3D Cauchy-Schwarz reduction
+        //  Ghost variables for the 3D Cauchy-Schwarz reduction
         let ghost x1 = an * db * dc;
         let ghost x2 = bn * da * dc;
         let ghost x3 = cn * da * db;
@@ -601,7 +601,7 @@ impl Rational {
         let ghost y2 = en_ * dd_ * df;
         let ghost y3 = fn_ * dd_ * de;
 
-        // ── Show dot.num = x1*y1 + x2*y2 + x3*y3 ──
+        //  ── Show dot.num = x1*y1 + x2*y2 + x3*y3 ──
         let ghost p1 = ((an * dn) * (db * de)) * (dc * df);
         assert(p1 == x1 * y1) by (nonlinear_arith)
             requires p1 == ((an * dn) * (db * de)) * (dc * df),
@@ -613,7 +613,7 @@ impl Rational {
                 x2 == bn * da * dc, y2 == en_ * dd_ * df;
 
         let ghost p3 = (cn * fn_) * ((da * dd_) * (db * de));
-        // Break into two factors, then recombine
+        //  Break into two factors, then recombine
         let ghost inner3 = (da * dd_) * (db * de);
         let ghost inner3a = da * db;
         let ghost inner3b = dd_ * de;
@@ -643,29 +643,29 @@ impl Rational {
             requires dot.num == p1 + p2 + p3,
                 p1 == x1 * y1, p2 == x2 * y2, p3 == x3 * y3;
 
-        // ── norm_l.num = x1² + x2² + x3² ──
+        //  ── norm_l.num = x1² + x2² + x3² ──
         Self::lemma_norm_num_sum_squares_3d(
             norm_l.num, aa_bb.num, aa_bb.denom(),
             an, bn, cn, da, db, dc,
         );
 
-        // ── norm_r.num = y1² + y2² + y3² ──
+        //  ── norm_r.num = y1² + y2² + y3² ──
         Self::lemma_norm_num_sum_squares_3d(
             norm_r.num, dd_ee.num, dd_ee.denom(),
             dn, en_, fn_, dd_, de, df,
         );
 
-        // ── Integer Cauchy-Schwarz: dot² ≤ norm_l * norm_r ──
+        //  ── Integer Cauchy-Schwarz: dot² ≤ norm_l * norm_r ──
         Self::lemma_cauchy_schwarz_int_3d(
             norm_l.num, norm_r.num, dot.num,
             x1, x2, x3, y1, y2, y3,
         );
 
-        // ── Show dot_sq.denom() == prod.denom() ──
-        // dot.denom() = (da*dd_)*(db*de)*(dc*df)
-        // dot_sq.denom() = dot.denom()²
-        // prod.denom() = norm_l.denom() * norm_r.denom()
-        //              = (da²*db²*dc²) * (dd_²*de²*df²)
+        //  ── Show dot_sq.denom() == prod.denom() ──
+        //  dot.denom() = (da*dd_)*(db*de)*(dc*df)
+        //  dot_sq.denom() = dot.denom()²
+        //  prod.denom() = norm_l.denom() * norm_r.denom()
+        //               = (da²*db²*dc²) * (dd_²*de²*df²)
         let ghost D_dot = (da * dd_) * (db * de) * (dc * df);
         assert(dot.denom() == D_dot) by (nonlinear_arith)
             requires
@@ -699,7 +699,7 @@ impl Rational {
                 prod.denom() == norm_l.denom() * norm_r.denom(),
                 norm_l.denom() == nl_d, norm_r.denom() == nr_d;
 
-        // Dsq == nl_d * nr_d via helper
+        //  Dsq == nl_d * nr_d via helper
         Self::lemma_denom_sq_three_factors(da, db, dc, dd_, de, df);
 
         assert(dot_sq.denom() == prod.denom()) by (nonlinear_arith)
@@ -712,7 +712,7 @@ impl Rational {
                     * ((da * dd_) * (db * de) * (dc * df))
                     == nl_d * nr_d;
 
-        // prod.denom() > 0
+        //  prod.denom() > 0
         assert(prod.denom() > 0) by (nonlinear_arith)
             requires
                 prod.denom() == nl_d * nr_d,
@@ -720,7 +720,7 @@ impl Rational {
                 nr_d == (dd_ * dd_) * (de * de) * (df * df),
                 da > 0, db > 0, dc > 0, dd_ > 0, de > 0, df > 0;
 
-        // Final: dot_sq.num * prod.denom() ≤ prod.num * dot_sq.denom()
+        //  Final: dot_sq.num * prod.denom() ≤ prod.num * dot_sq.denom()
         assert(dot_sq.num * prod.denom() <= prod.num * dot_sq.denom())
             by (nonlinear_arith)
             requires
@@ -733,4 +733,4 @@ impl Rational {
 
 }
 
-} // verus!
+} //  verus!

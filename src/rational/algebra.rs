@@ -4,7 +4,7 @@ use vstd::prelude::*;
 
 verus! {
 
-// ── Equivalence ─────────────────────────────────────────────────────
+//  ── Equivalence ─────────────────────────────────────────────────────
 
 impl Equivalence for Rational {
     open spec fn eqv(self, other: Self) -> bool {
@@ -24,13 +24,13 @@ impl Equivalence for Rational {
     }
 
     proof fn axiom_eq_implies_eqv(a: Self, b: Self) {
-        // Equality of Rational means same value field
-        // eqv_spec checks that the cross products are equal
-        // For equal values, the cross products are trivially equal
+        //  Equality of Rational means same value field
+        //  eqv_spec checks that the cross products are equal
+        //  For equal values, the cross products are trivially equal
     }
 }
 
-// ── AdditiveCommutativeMonoid ───────────────────────────────────────
+//  ── AdditiveCommutativeMonoid ───────────────────────────────────────
 
 impl AdditiveCommutativeMonoid for Rational {
     open spec fn zero() -> Self {
@@ -59,7 +59,7 @@ impl AdditiveCommutativeMonoid for Rational {
     }
 }
 
-// ── AdditiveGroup ───────────────────────────────────────────────────
+//  ── AdditiveGroup ───────────────────────────────────────────────────
 
 impl AdditiveGroup for Rational {
     open spec fn neg(self) -> Self {
@@ -75,7 +75,7 @@ impl AdditiveGroup for Rational {
     }
 
     proof fn axiom_sub_is_add_neg(a: Self, b: Self) {
-        // sub_spec(a, b) == add_spec(a, neg_spec(b)) by definition
+        //  sub_spec(a, b) == add_spec(a, neg_spec(b)) by definition
         Self::lemma_eqv_reflexive(a.sub_spec(b));
     }
 
@@ -84,7 +84,7 @@ impl AdditiveGroup for Rational {
     }
 }
 
-// ── Ring ─────────────────────────────────────────────────────────────
+//  ── Ring ─────────────────────────────────────────────────────────────
 
 impl Ring for Rational {
     open spec fn one() -> Self {
@@ -126,7 +126,7 @@ impl Ring for Rational {
     }
 }
 
-// ── PartialOrder ────────────────────────────────────────────────────
+//  ── PartialOrder ────────────────────────────────────────────────────
 
 impl PartialOrder for Rational {
     open spec fn le(self, other: Self) -> bool {
@@ -134,7 +134,7 @@ impl PartialOrder for Rational {
     }
 
     proof fn axiom_le_reflexive(a: Self) {
-        // a.le_spec(a) == (a.num * a.denom() <= a.num * a.denom()), trivially true
+        //  a.le_spec(a) == (a.num * a.denom() <= a.num * a.denom()), trivially true
     }
 
     proof fn axiom_le_antisymmetric(a: Self, b: Self) {
@@ -146,15 +146,15 @@ impl PartialOrder for Rational {
     }
 
     proof fn axiom_le_congruence(a1: Self, a2: Self, b1: Self, b2: Self) {
-        Self::lemma_eqv_symmetric(a1, a2);     // a2 ≡ a1
-        Self::lemma_eqv_implies_le(a2, a1);    // a2 ≤ a1
-        Self::lemma_le_transitive(a2, a1, b1); // a2 ≤ b1
-        Self::lemma_eqv_implies_le(b1, b2);    // b1 ≤ b2
-        Self::lemma_le_transitive(a2, b1, b2); // a2 ≤ b2
+        Self::lemma_eqv_symmetric(a1, a2);     //  a2 ≡ a1
+        Self::lemma_eqv_implies_le(a2, a1);    //  a2 ≤ a1
+        Self::lemma_le_transitive(a2, a1, b1); //  a2 ≤ b1
+        Self::lemma_eqv_implies_le(b1, b2);    //  b1 ≤ b2
+        Self::lemma_le_transitive(a2, b1, b2); //  a2 ≤ b2
     }
 }
 
-// ── OrderedRing ──────────────────────────────────────────────────────
+//  ── OrderedRing ──────────────────────────────────────────────────────
 
 impl OrderedRing for Rational {
     open spec fn lt(self, other: Self) -> bool {
@@ -181,7 +181,7 @@ impl OrderedRing for Rational {
     }
 }
 
-// ── Field ────────────────────────────────────────────────────────────
+//  ── Field ────────────────────────────────────────────────────────────
 
 impl Field for Rational {
     open spec fn recip(self) -> Self {
@@ -193,57 +193,57 @@ impl Field for Rational {
     }
 
     proof fn axiom_mul_recip_right(a: Self) {
-        // requires: !a.eqv(Self::zero()), i.e. !a.eqv_spec(from_int_spec(0))
-        // Bridge: eqv_spec(0) ↔ num == 0
+        //  requires: !a.eqv(Self::zero()), i.e. !a.eqv_spec(from_int_spec(0))
+        //  Bridge: eqv_spec(0) ↔ num == 0
         Self::lemma_eqv_zero_iff_num_zero(a);
         Self::lemma_reciprocal_spec_inverse(a);
     }
 
     proof fn axiom_div_is_mul_recip(a: Self, b: Self) {
-        // div_spec(a, b) == mul_spec(a, reciprocal_spec(b)) by definition
+        //  div_spec(a, b) == mul_spec(a, reciprocal_spec(b)) by definition
         Self::lemma_eqv_reflexive(a.div_spec(b));
     }
 
     proof fn axiom_recip_congruence(a: Self, b: Self) {
-        // Given: a ≡ b, !a.eqv(0). Show: recip(a) ≡ recip(b).
+        //  Given: a ≡ b, !a.eqv(0). Show: recip(a) ≡ recip(b).
         Self::lemma_eqv_zero_iff_num_zero(a);
         Self::lemma_eqv_zero_iff_num_zero(b);
         Self::lemma_denom_positive(a);
         Self::lemma_denom_positive(b);
-        // a ≡ b means a.num * b.denom() == b.num * a.denom()
-        // !a.eqv(0) means a.num != 0
-        // a.num != 0 and a.num * b.denom() == b.num * a.denom() with denoms > 0
-        // implies b.num != 0
+        //  a ≡ b means a.num * b.denom() == b.num * a.denom()
+        //  !a.eqv(0) means a.num != 0
+        //  a.num != 0 and a.num * b.denom() == b.num * a.denom() with denoms > 0
+        //  implies b.num != 0
         assert(a.num != 0);
         assert(a.num * b.denom() == b.num * a.denom());
         assert((a.num * b.denom() == b.num * a.denom() && a.num != 0 && a.denom() > 0)
             ==> b.num != 0) by (nonlinear_arith);
 
-        // Get inverses
+        //  Get inverses
         let inv_a = Self::lemma_reciprocal_spec_inverse(a);
         let inv_b = Self::lemma_reciprocal_spec_inverse(b);
 
-        // a * inv_a ≡ 1 and b * inv_b ≡ 1
+        //  a * inv_a ≡ 1 and b * inv_b ≡ 1
         let one = Self::from_int_spec(1);
 
-        // a ≡ b, so a*inv_a ≡ b*inv_a (left congruence)
+        //  a ≡ b, so a*inv_a ≡ b*inv_a (left congruence)
         Self::lemma_eqv_mul_congruence_left(a, b, inv_a);
-        // a*inv_a ≡ 1, so b*inv_a ≡ 1 (by symmetry + transitivity)
+        //  a*inv_a ≡ 1, so b*inv_a ≡ 1 (by symmetry + transitivity)
         Self::lemma_eqv_symmetric(a.mul_spec(inv_a), b.mul_spec(inv_a));
         Self::lemma_eqv_transitive(b.mul_spec(inv_a), a.mul_spec(inv_a), one);
-        // b*inv_a ≡ 1 and b*inv_b ≡ 1
-        // So b*inv_a ≡ b*inv_b
+        //  b*inv_a ≡ 1 and b*inv_b ≡ 1
+        //  So b*inv_a ≡ b*inv_b
         Self::lemma_eqv_symmetric(b.mul_spec(inv_b), one);
         Self::lemma_eqv_transitive(b.mul_spec(inv_a), one, b.mul_spec(inv_b));
 
-        // Cancel b: inv_a ≡ inv_b
-        // b ≢ 0 since b.num != 0
+        //  Cancel b: inv_a ≡ inv_b
+        //  b ≢ 0 since b.num != 0
         Self::lemma_mul_cancel_left(inv_a, inv_b, b);
     }
 }
 
-// ── OrderedField ─────────────────────────────────────────────────────
+//  ── OrderedField ─────────────────────────────────────────────────────
 
 impl OrderedField for Rational {}
 
-} // verus!
+} //  verus!

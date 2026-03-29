@@ -10,7 +10,7 @@ use vstd::arithmetic::mul::{
 verus! {
 
 impl Rational {
-    /// a ≡ a.
+    ///  a ≡ a.
     pub proof fn lemma_eqv_reflexive(a: Self)
         ensures
             a.eqv_spec(a),
@@ -18,7 +18,7 @@ impl Rational {
         assert(a.num * a.denom() == a.num * a.denom());
     }
 
-    /// a ≡ b ↔ b ≡ a.
+    ///  a ≡ b ↔ b ≡ a.
     pub proof fn lemma_eqv_symmetric(a: Self, b: Self)
         ensures
             a.eqv_spec(b) == b.eqv_spec(a),
@@ -27,7 +27,7 @@ impl Rational {
         assert(b.eqv_spec(a) == (b.num * a.denom() == a.num * b.denom()));
     }
 
-    /// a ≡ b ∧ b ≡ c → a ≡ c.
+    ///  a ≡ b ∧ b ≡ c → a ≡ c.
     pub proof fn lemma_eqv_transitive(a: Self, b: Self, c: Self)
         requires
             a.eqv_spec(b),
@@ -64,14 +64,14 @@ impl Rational {
         assert(a.num * c.denom() == c.num * a.denom());
     }
 
-    /// Canonical normalization predicate for the model:
-    /// among semantically-equivalent representations, this value has a
-    /// minimal denominator.
+    ///  Canonical normalization predicate for the model:
+    ///  among semantically-equivalent representations, this value has a
+    ///  minimal denominator.
     pub open spec fn normalized_spec(self) -> bool {
         forall|other: Self| #[trigger] self.eqv_spec(other) ==> self.denom_nat() <= other.denom_nat()
     }
 
-    /// from_int(v) is normalized (denominator 1 is minimal).
+    ///  from_int(v) is normalized (denominator 1 is minimal).
     pub proof fn lemma_from_int_is_normalized(value: int)
         ensures
             Self::from_int_spec(value).normalized_spec(),
@@ -85,7 +85,7 @@ impl Rational {
         };
     }
 
-    /// Two normalized equivalents have equal denominators.
+    ///  Two normalized equivalents have equal denominators.
     pub proof fn lemma_normalized_eqv_implies_equal_denom(a: Self, b: Self)
         requires
             a.normalized_spec(),
@@ -105,7 +105,7 @@ impl Rational {
         assert(a.denom_nat() == b.denom_nat());
     }
 
-    /// a ≡ b with equal denominators implies equal numerators.
+    ///  a ≡ b with equal denominators implies equal numerators.
     pub proof fn lemma_eqv_and_equal_denom_implies_equal_num(a: Self, b: Self)
         requires
             a.eqv_spec(b),
@@ -130,8 +130,8 @@ impl Rational {
         assert(a.num == b.num);
     }
 
-    /// Strongest normalization bridge currently available:
-    /// normalized semantic-equality implies structural equality.
+    ///  Strongest normalization bridge currently available:
+    ///  normalized semantic-equality implies structural equality.
     pub proof fn lemma_normalized_eqv_implies_equal(a: Self, b: Self)
         requires
             a.normalized_spec(),
@@ -149,7 +149,7 @@ impl Rational {
         assert(a == b);
     }
 
-    /// Normalized values use canonical zero representation.
+    ///  Normalized values use canonical zero representation.
     pub proof fn lemma_normalized_zero_has_unit_denom(a: Self)
         requires
             a.normalized_spec(),
@@ -169,8 +169,8 @@ impl Rational {
         assert(a.denom_nat() == 1);
     }
 
-    /// Canonical sign placement for rationals:
-    /// denominator positive, and zero has denominator `1`.
+    ///  Canonical sign placement for rationals:
+    ///  denominator positive, and zero has denominator `1`.
     pub open spec fn canonical_sign_spec(self) -> bool {
         &&& self.denom_nat() > 0
         &&& (self.num == 0 ==> self.denom_nat() == 1)
@@ -280,8 +280,8 @@ impl Rational {
         assert(x == bound);
     }
 
-    /// Constructively picks an equivalent scalar whose denominator is minimal
-    /// among all equivalent forms with denominator at most `bound`.
+    ///  Constructively picks an equivalent scalar whose denominator is minimal
+    ///  among all equivalent forms with denominator at most `bound`.
     pub proof fn normalize_bounded(a: Self, bound: nat) -> (m: Self)
         requires
             exists|s: Self| #![auto] s.eqv_spec(a) && s.denom_nat() <= bound,
@@ -357,8 +357,8 @@ impl Rational {
         }
     }
 
-    /// Fully verified constructive normalization:
-    /// returns an equivalent scalar with globally minimal denominator.
+    ///  Fully verified constructive normalization:
+    ///  returns an equivalent scalar with globally minimal denominator.
     pub proof fn normalize_constructive(a: Self) -> (m: Self)
         ensures
             m.eqv_spec(a),
@@ -925,4 +925,4 @@ impl Rational {
 
 }
 
-} // verus!
+} //  verus!
