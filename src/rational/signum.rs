@@ -11,7 +11,7 @@ use vstd::arithmetic::mul::{
 verus! {
 
 impl Rational {
-    /// a ≡ b → signum(a) == signum(b).
+    ///  a ≡ b → signum(a) == signum(b).
     pub proof fn lemma_eqv_signum(a: Self, b: Self)
         requires
             a.eqv_spec(b),
@@ -63,7 +63,7 @@ impl Rational {
         assert(a.signum() == b.signum());
     }
 
-    /// signum(a) == 1 ↔ a.num > 0.
+    ///  signum(a) == 1 ↔ a.num > 0.
     pub proof fn lemma_signum_positive_iff(a: Self)
         ensures
             (a.signum() == 1) == (a.num > 0),
@@ -75,7 +75,7 @@ impl Rational {
         }
     }
 
-    /// (-a).num == -a.num.
+    ///  (-a).num == -a.num.
     pub proof fn lemma_signum_neg(a: Self)
         ensures
             a.neg_spec().num == -a.num,
@@ -84,7 +84,7 @@ impl Rational {
         assert(n.num == -a.num);
     }
 
-    /// signum(-a) == -signum(a).
+    ///  signum(-a) == -signum(a).
     pub proof fn lemma_signum_negate(a: Self)
         ensures
             a.neg_spec().signum() == -a.signum(),
@@ -125,7 +125,7 @@ impl Rational {
         assert(n.signum() == -a.signum());
     }
 
-    /// signum(a) == -1 ↔ a.num < 0.
+    ///  signum(a) == -1 ↔ a.num < 0.
     pub proof fn lemma_signum_negative_iff(a: Self)
         ensures
             (a.signum() == -1) == (a.num < 0),
@@ -137,7 +137,7 @@ impl Rational {
         }
     }
 
-    /// signum(a) == 0 ↔ a.num == 0.
+    ///  signum(a) == 0 ↔ a.num == 0.
     pub proof fn lemma_signum_zero_iff(a: Self)
         ensures
             (a.signum() == 0) == (a.num == 0),
@@ -149,7 +149,7 @@ impl Rational {
         }
     }
 
-    /// signum(a) is always 1, -1, or 0.
+    ///  signum(a) is always 1, -1, or 0.
     pub proof fn lemma_signum_cases(a: Self)
         ensures
             a.signum() == 1 || a.signum() == -1 || a.signum() == 0,
@@ -163,7 +163,7 @@ impl Rational {
         }
     }
 
-    /// signum(a * b) == signum(a) * signum(b).
+    ///  signum(a * b) == signum(a) * signum(b).
     pub proof fn lemma_signum_mul(a: Self, b: Self)
         ensures
             a.mul_spec(b).signum() == a.signum() * b.signum(),
@@ -278,4 +278,4 @@ impl Rational {
 
 }
 
-} // verus!
+} //  verus!

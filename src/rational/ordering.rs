@@ -12,18 +12,18 @@ use vstd::arithmetic::mul::{
 verus! {
 
 impl Rational {
-    // ── Trichotomy and ordering ───────────────────────────────────────
+    //  ── Trichotomy and ordering ───────────────────────────────────────
 
-    /// No rational is strictly less than itself.
+    ///  No rational is strictly less than itself.
     pub proof fn lemma_lt_irreflexive(a: Self)
         ensures
             !a.lt_spec(a),
     {
         Self::lemma_denom_positive(a);
-        // a.lt_spec(a) == (a.num * a.denom() < a.num * a.denom()), trivially false
+        //  a.lt_spec(a) == (a.num * a.denom() < a.num * a.denom()), trivially false
     }
 
-    /// Strict less-than is asymmetric.
+    ///  Strict less-than is asymmetric.
     pub proof fn lemma_lt_asymmetric(a: Self, b: Self)
         requires
             a.lt_spec(b),
@@ -32,11 +32,11 @@ impl Rational {
     {
         Self::lemma_denom_positive(a);
         Self::lemma_denom_positive(b);
-        // a.num * b.denom() < b.num * a.denom()
-        // so !(b.num * a.denom() < a.num * b.denom())
+        //  a.num * b.denom() < b.num * a.denom()
+        //  so !(b.num * a.denom() < a.num * b.denom())
     }
 
-    /// Strict less-than is transitive.
+    ///  Strict less-than is transitive.
     pub proof fn lemma_lt_transitive(a: Self, b: Self, c: Self)
         requires
             a.lt_spec(b),
@@ -50,13 +50,13 @@ impl Rational {
         let da = a.denom();
         let db = b.denom();
         let dc = c.denom();
-        // a.num * db < b.num * da
-        // b.num * dc < c.num * db
-        // Multiply first by dc (> 0): a.num * db * dc < b.num * da * dc
-        // Multiply second by da (> 0): b.num * dc * da < c.num * db * da
-        // b.num * da * dc == b.num * dc * da, so by int transitivity:
-        //   a.num * db * dc < c.num * db * da
-        // db > 0, so divide: a.num * dc < c.num * da
+        //  a.num * db < b.num * da
+        //  b.num * dc < c.num * db
+        //  Multiply first by dc (> 0): a.num * db * dc < b.num * da * dc
+        //  Multiply second by da (> 0): b.num * dc * da < c.num * db * da
+        //  b.num * da * dc == b.num * dc * da, so by int transitivity:
+        //    a.num * db * dc < c.num * db * da
+        //  db > 0, so divide: a.num * dc < c.num * da
         assert(
             (a.num * db < b.num * da && b.num * dc < c.num * db
                 && da > 0 && db > 0 && dc > 0)
@@ -64,7 +64,7 @@ impl Rational {
         ) by (nonlinear_arith);
     }
 
-    /// Exactly one of `a < b`, `a ≡ b`, `b < a` holds.
+    ///  Exactly one of `a < b`, `a ≡ b`, `b < a` holds.
     pub proof fn lemma_trichotomy(a: Self, b: Self)
         ensures
             a.lt_spec(b) || a.eqv_spec(b) || b.lt_spec(a),
@@ -74,11 +74,11 @@ impl Rational {
     {
         Self::lemma_denom_positive(a);
         Self::lemma_denom_positive(b);
-        // All three predicates compare a.num * b.denom() vs b.num * a.denom(),
-        // which are plain integers — trichotomy is immediate.
+        //  All three predicates compare a.num * b.denom() vs b.num * a.denom(),
+        //  which are plain integers — trichotomy is immediate.
     }
 
-    /// le is equivalent to lt-or-eqv.
+    ///  le is equivalent to lt-or-eqv.
     pub proof fn lemma_le_iff_lt_or_eqv(a: Self, b: Self)
         ensures
             a.le_spec(b) == (a.lt_spec(b) || a.eqv_spec(b)),
@@ -87,7 +87,7 @@ impl Rational {
         Self::lemma_denom_positive(b);
     }
 
-    /// Strict less-than implies le.
+    ///  Strict less-than implies le.
     pub proof fn lemma_lt_implies_le(a: Self, b: Self)
         requires
             a.lt_spec(b),
@@ -98,7 +98,7 @@ impl Rational {
         Self::lemma_denom_positive(b);
     }
 
-    /// Equivalence implies le (in both directions).
+    ///  Equivalence implies le (in both directions).
     pub proof fn lemma_eqv_implies_le(a: Self, b: Self)
         requires
             a.eqv_spec(b),
@@ -110,7 +110,7 @@ impl Rational {
         Self::lemma_denom_positive(b);
     }
 
-    /// Antisymmetry: le in both directions implies equivalence.
+    ///  Antisymmetry: le in both directions implies equivalence.
     pub proof fn lemma_le_antisymmetric(a: Self, b: Self)
         requires
             a.le_spec(b),
@@ -122,7 +122,7 @@ impl Rational {
         Self::lemma_denom_positive(b);
     }
 
-    /// le is transitive.
+    ///  le is transitive.
     pub proof fn lemma_le_transitive(a: Self, b: Self, c: Self)
         requires
             a.le_spec(b),
@@ -143,7 +143,7 @@ impl Rational {
         ) by (nonlinear_arith);
     }
 
-    /// Mixed transitivity: a ≤ b ∧ b < c → a < c.
+    ///  Mixed transitivity: a ≤ b ∧ b < c → a < c.
     pub proof fn lemma_le_lt_transitive(a: Self, b: Self, c: Self)
         requires
             a.le_spec(b),
@@ -162,7 +162,7 @@ impl Rational {
         ) by (nonlinear_arith);
     }
 
-    /// Mixed transitivity: a < b ∧ b ≤ c → a < c.
+    ///  Mixed transitivity: a < b ∧ b ≤ c → a < c.
     pub proof fn lemma_lt_le_transitive(a: Self, b: Self, c: Self)
         requires
             a.lt_spec(b),
@@ -181,9 +181,9 @@ impl Rational {
         ) by (nonlinear_arith);
     }
 
-    // ── Square non-negativity ───────────────────────────────────────
+    //  ── Square non-negativity ───────────────────────────────────────
 
-    /// The square of any rational is non-negative.
+    ///  The square of any rational is non-negative.
     pub proof fn lemma_square_nonneg(a: Self)
         ensures
             a.mul_spec(a).signum() >= 0,
@@ -201,7 +201,7 @@ impl Rational {
         }
     }
 
-    /// The square of any rational is le-nonneg: from_int(0) ≤ a*a.
+    ///  The square of any rational is le-nonneg: from_int(0) ≤ a*a.
     pub proof fn lemma_square_le_nonneg(a: Self)
         ensures
             Self::from_int_spec(0).le_spec(a.mul_spec(a)),
@@ -221,9 +221,9 @@ impl Rational {
         assert(0 <= sq.num);
     }
 
-    // ── Integer embedding ───────────────────────────────────────────
+    //  ── Integer embedding ───────────────────────────────────────────
 
-    /// Helper: from_int produces denom() == 1.
+    ///  Helper: from_int produces denom() == 1.
     pub proof fn lemma_from_int_denom(m: int)
         ensures
             Self::from_int_spec(m).denom() == 1,
@@ -231,7 +231,7 @@ impl Rational {
     {
     }
 
-    /// Integer embedding preserves strict ordering.
+    ///  Integer embedding preserves strict ordering.
     pub proof fn lemma_from_int_preserves_lt(m: int, n: int)
         requires
             m < n,
@@ -240,13 +240,13 @@ impl Rational {
     {
         let a = Self::from_int_spec(m);
         let b = Self::from_int_spec(n);
-        // a.num * b.denom() < b.num * a.denom()
-        // m * 1 < n * 1
+        //  a.num * b.denom() < b.num * a.denom()
+        //  m * 1 < n * 1
         Self::lemma_from_int_denom(m);
         Self::lemma_from_int_denom(n);
     }
 
-    /// Integer embedding preserves non-strict ordering.
+    ///  Integer embedding preserves non-strict ordering.
     pub proof fn lemma_from_int_preserves_le(m: int, n: int)
         requires
             m <= n,
@@ -257,7 +257,7 @@ impl Rational {
         Self::lemma_from_int_denom(n);
     }
 
-    /// Integer embedding is injective (equivalent images implies equal inputs).
+    ///  Integer embedding is injective (equivalent images implies equal inputs).
     pub proof fn lemma_from_int_injective(m: int, n: int)
         requires
             Self::from_int_spec(m).eqv_spec(Self::from_int_spec(n)),
@@ -266,10 +266,10 @@ impl Rational {
     {
         Self::lemma_from_int_denom(m);
         Self::lemma_from_int_denom(n);
-        // eqv: m * 1 == n * 1, so m == n
+        //  eqv: m * 1 == n * 1, so m == n
     }
 
-    /// Integer embedding distributes over addition.
+    ///  Integer embedding distributes over addition.
     pub proof fn lemma_from_int_add(m: int, n: int)
         ensures
             Self::from_int_spec(m).add_spec(Self::from_int_spec(n)).eqv_spec(
@@ -282,10 +282,10 @@ impl Rational {
         Self::lemma_from_int_denom(m);
         Self::lemma_from_int_denom(n);
         Self::lemma_from_int_denom(m + n);
-        // sum.num = m * 1 + n * 1 = m + n
-        // sum.denom_nat() = 0*0 + 0 + 0 + 1 = 1, so sum.denom() = 1
-        // target.num = m + n, target.denom() = 1
-        // eqv: (m+n) * 1 == (m+n) * 1
+        //  sum.num = m * 1 + n * 1 = m + n
+        //  sum.denom_nat() = 0*0 + 0 + 0 + 1 = 1, so sum.denom() = 1
+        //  target.num = m + n, target.denom() = 1
+        //  eqv: (m+n) * 1 == (m+n) * 1
         Self::lemma_add_denom_product_int(a, b);
         assert(sum.denom() == a.denom() * b.denom());
         assert(sum.denom() == 1);
@@ -294,7 +294,7 @@ impl Rational {
         assert(sum.eqv_spec(target) == (sum.num * target.denom() == target.num * sum.denom()));
     }
 
-    /// Integer embedding distributes over multiplication.
+    ///  Integer embedding distributes over multiplication.
     pub proof fn lemma_from_int_mul(m: int, n: int)
         ensures
             Self::from_int_spec(m).mul_spec(Self::from_int_spec(n)).eqv_spec(
@@ -314,26 +314,26 @@ impl Rational {
         assert(prod.eqv_spec(target) == (prod.num * target.denom() == target.num * prod.denom()));
     }
 
-    /// Integer embedding distributes over negation.
+    ///  Integer embedding distributes over negation.
     pub proof fn lemma_from_int_neg(m: int)
         ensures
             Self::from_int_spec(m).neg_spec() == Self::from_int_spec(-m),
     {
-        // neg_spec just negates num, den stays 0
+        //  neg_spec just negates num, den stays 0
     }
 
-    /// Integer embedding distributes over subtraction.
+    ///  Integer embedding distributes over subtraction.
     pub proof fn lemma_from_int_sub(m: int, n: int)
         ensures
             Self::from_int_spec(m).sub_spec(Self::from_int_spec(n)).eqv_spec(
                 Self::from_int_spec(m - n)),
     {
-        // sub = add(neg)
+        //  sub = add(neg)
         Self::lemma_from_int_neg(n);
-        // from_int(n).neg_spec() == from_int(-n)
-        // so sub == from_int(m).add(from_int(-n))
+        //  from_int(n).neg_spec() == from_int(-n)
+        //  so sub == from_int(m).add(from_int(-n))
         Self::lemma_from_int_add(m, -n);
-        // from_int(m).add(from_int(-n)) ≡ from_int(m + (-n)) = from_int(m - n)
+        //  from_int(m).add(from_int(-n)) ≡ from_int(m + (-n)) = from_int(m - n)
         let a = Self::from_int_spec(m);
         let b = Self::from_int_spec(n);
         assert(a.sub_spec(b) == a.add_spec(b.neg_spec()));
@@ -343,9 +343,9 @@ impl Rational {
         assert(a.sub_spec(b) == a.add_spec(Self::from_int_spec(-n)));
     }
 
-    // ── Sign-preserving multiplication monotonicity ──────────────────
+    //  ── Sign-preserving multiplication monotonicity ──────────────────
 
-    /// If a ≤ b and 0 ≤ c, then a*c ≤ b*c.
+    ///  If a ≤ b and 0 ≤ c, then a*c ≤ b*c.
     pub proof fn lemma_le_mul_nonneg(a: Self, b: Self, c: Self)
         requires
             a.le_spec(b),
@@ -384,7 +384,7 @@ impl Rational {
         assert(ac.num * bc.denom() <= bc.num * ac.denom());
     }
 
-    /// If 0 ≤ a ≤ b and 0 ≤ c ≤ d, then a*c ≤ b*d.
+    ///  If 0 ≤ a ≤ b and 0 ≤ c ≤ d, then a*c ≤ b*d.
     pub proof fn lemma_le_mul_nonneg_both(a: Self, b: Self, c: Self, d: Self)
         requires
             Self::from_int_spec(0).le_spec(a),
@@ -394,48 +394,48 @@ impl Rational {
         ensures
             a.mul_spec(c).le_spec(b.mul_spec(d)),
     {
-        // a*c ≤ b*c (monotone in first arg with c ≥ 0)
+        //  a*c ≤ b*c (monotone in first arg with c ≥ 0)
         Self::lemma_le_mul_nonneg(a, b, c);
-        // b*c ≤ b*d (monotone in second arg with b ≥ 0)
-        // Use commutativity: b*c = c*b, b*d = d*b
+        //  b*c ≤ b*d (monotone in second arg with b ≥ 0)
+        //  Use commutativity: b*c = c*b, b*d = d*b
         Self::lemma_mul_commutative(b, c);
         Self::lemma_mul_commutative(b, d);
         Self::lemma_le_transitive(Self::from_int_spec(0), a, b);
         Self::lemma_le_mul_nonneg(c, d, b);
-        // c*b ≤ d*b, which structurally == b*c ≤ b*d
-        // since mul_commutative gives ==
-        // Now transitivity: a*c ≤ b*c ≤ b*d
+        //  c*b ≤ d*b, which structurally == b*c ≤ b*d
+        //  since mul_commutative gives ==
+        //  Now transitivity: a*c ≤ b*c ≤ b*d
         Self::lemma_le_transitive(a.mul_spec(c), b.mul_spec(c), b.mul_spec(d));
     }
 
-    // ── Cross-multiplication ordering ────────────────────────────────
+    //  ── Cross-multiplication ordering ────────────────────────────────
 
-    /// For rationals, a ≤ b ↔ a.num * b.denom() ≤ b.num * a.denom().
-    /// (This is definitional, but exposing it as a lemma is convenient.)
+    ///  For rationals, a ≤ b ↔ a.num * b.denom() ≤ b.num * a.denom().
+    ///  (This is definitional, but exposing it as a lemma is convenient.)
     pub proof fn lemma_cross_mul_le(a: Self, b: Self)
         ensures
             a.le_spec(b) == (a.num * b.denom() <= b.num * a.denom()),
     {
-        // le_spec is defined exactly this way, so nothing to prove.
+        //  le_spec is defined exactly this way, so nothing to prove.
     }
 
-    /// a < b ↔ a.num * b.denom() < b.num * a.denom().
+    ///  a < b ↔ a.num * b.denom() < b.num * a.denom().
     pub proof fn lemma_cross_mul_lt(a: Self, b: Self)
         ensures
             a.lt_spec(b) == (a.num * b.denom() < b.num * a.denom()),
     {
-        // lt_spec is defined exactly this way, so nothing to prove.
+        //  lt_spec is defined exactly this way, so nothing to prove.
     }
 
-    // ── Density / midpoint ───────────────────────────────────────────
+    //  ── Density / midpoint ───────────────────────────────────────────
 
-    /// The midpoint of two rationals: (a + b) / 2.
+    ///  The midpoint of two rationals: (a + b) / 2.
     pub open spec fn midpoint_spec(a: Self, b: Self) -> Self {
         a.add_spec(b).mul_spec(Self { num: 1, den: 1 })
-        // den=1 means denom()=2, so this is (a+b) * (1/2)
+        //  den=1 means denom()=2, so this is (a+b) * (1/2)
     }
 
-    /// midpoint(a, a) ≡ a.
+    ///  midpoint(a, a) ≡ a.
     pub proof fn lemma_midpoint_eqv_self(a: Self)
         ensures
             Self::midpoint_spec(a, a).eqv_spec(a),
@@ -446,7 +446,7 @@ impl Rational {
 
         Self::lemma_denom_positive(a);
         Self::lemma_add_denom_product_int(a, a);
-        // aa.num = a.num * a.denom() + a.num * a.denom() = 2 * a.num * a.denom()
+        //  aa.num = a.num * a.denom() + a.num * a.denom() = 2 * a.num * a.denom()
         assert(aa.num == a.num * a.denom() + a.num * a.denom());
         assert(aa.denom() == a.denom() * a.denom());
 
@@ -460,12 +460,12 @@ impl Rational {
             requires mid.num == aa.num * 1;
         assert(mid.denom() == aa.denom() * 2);
 
-        // mid ≡ a means mid.num * a.denom() == a.num * mid.denom()
-        // mid.num = 2 * a.num * a.denom()
-        // mid.denom() = a.denom()^2 * 2
-        // mid.num * a.denom() = 2 * a.num * a.denom() * a.denom()
-        // a.num * mid.denom() = a.num * a.denom()^2 * 2
-        // These are equal.
+        //  mid ≡ a means mid.num * a.denom() == a.num * mid.denom()
+        //  mid.num = 2 * a.num * a.denom()
+        //  mid.denom() = a.denom()^2 * 2
+        //  mid.num * a.denom() = 2 * a.num * a.denom() * a.denom()
+        //  a.num * mid.denom() = a.num * a.denom()^2 * 2
+        //  These are equal.
         assert(aa.num == 2 * a.num * a.denom()) by (nonlinear_arith)
             requires aa.num == a.num * a.denom() + a.num * a.denom();
         assert(mid.num == 2 * a.num * a.denom());
@@ -480,7 +480,7 @@ impl Rational {
         assert(mid.num * a.denom() == a.num * mid.denom());
     }
 
-    /// If a < b, then a < midpoint(a, b) (midpoint is strictly between).
+    ///  If a < b, then a < midpoint(a, b) (midpoint is strictly between).
     pub proof fn lemma_midpoint_between_left(a: Self, b: Self)
         requires
             a.lt_spec(b),
@@ -505,24 +505,24 @@ impl Rational {
             requires mid.num == s.num * 1;
         assert(mid.denom() == s.denom() * 2);
 
-        // a < b means a.num * b.denom() < b.num * a.denom()
+        //  a < b means a.num * b.denom() < b.num * a.denom()
         assert(a.num * b.denom() < b.num * a.denom());
         let ghost an_bd = a.num * b.denom();
         let ghost bn_ad = b.num * a.denom();
 
-        // a < mid means a.num * mid.denom() < mid.num * a.denom()
-        // a.num * mid.denom() = a.num * s.denom() * 2
-        //                     = a.num * a.denom() * b.denom() * 2
-        // mid.num * a.denom() = s.num * a.denom()
-        //                     = (a.num * b.denom() + b.num * a.denom()) * a.denom()
-        //                     = a.num * b.denom() * a.denom() + b.num * a.denom() * a.denom()
-        // Need: a.num * a.denom() * b.denom() * 2
-        //     < a.num * b.denom() * a.denom() + b.num * a.denom() * a.denom()
-        // i.e. 2 * a.num * a.denom() * b.denom()
-        //    < (a.num * b.denom() + b.num * a.denom()) * a.denom()
-        // i.e. 2 * an_bd * a.denom() < (an_bd + bn_ad) * a.denom()
-        // Since a.denom() > 0, dividing: 2 * an_bd < an_bd + bn_ad
-        // i.e. an_bd < bn_ad, which is exactly a < b. ✓
+        //  a < mid means a.num * mid.denom() < mid.num * a.denom()
+        //  a.num * mid.denom() = a.num * s.denom() * 2
+        //                      = a.num * a.denom() * b.denom() * 2
+        //  mid.num * a.denom() = s.num * a.denom()
+        //                      = (a.num * b.denom() + b.num * a.denom()) * a.denom()
+        //                      = a.num * b.denom() * a.denom() + b.num * a.denom() * a.denom()
+        //  Need: a.num * a.denom() * b.denom() * 2
+        //      < a.num * b.denom() * a.denom() + b.num * a.denom() * a.denom()
+        //  i.e. 2 * a.num * a.denom() * b.denom()
+        //     < (a.num * b.denom() + b.num * a.denom()) * a.denom()
+        //  i.e. 2 * an_bd * a.denom() < (an_bd + bn_ad) * a.denom()
+        //  Since a.denom() > 0, dividing: 2 * an_bd < an_bd + bn_ad
+        //  i.e. an_bd < bn_ad, which is exactly a < b. ✓
 
         assert(a.num * mid.denom() == a.num * (s.denom() * 2));
         assert(mid.num * a.denom() == s.num * a.denom());
@@ -539,7 +539,7 @@ impl Rational {
         ;
     }
 
-    /// If a < b, then midpoint(a, b) < b.
+    ///  If a < b, then midpoint(a, b) < b.
     pub proof fn lemma_midpoint_between_right(a: Self, b: Self)
         requires
             a.lt_spec(b),
@@ -568,15 +568,15 @@ impl Rational {
         let ghost an_bd = a.num * b.denom();
         let ghost bn_ad = b.num * a.denom();
 
-        // mid < b means mid.num * b.denom() < b.num * mid.denom()
-        // mid.num * b.denom() = s.num * b.denom()
-        //                     = (an_bd + bn_ad) * b.denom()
-        // b.num * mid.denom() = b.num * s.denom() * 2
-        //                     = b.num * a.denom() * b.denom() * 2
-        //                     = 2 * bn_ad * b.denom()
-        // Need: (an_bd + bn_ad) * b.denom() < 2 * bn_ad * b.denom()
-        // Since b.denom() > 0: an_bd + bn_ad < 2 * bn_ad
-        // i.e. an_bd < bn_ad ✓
+        //  mid < b means mid.num * b.denom() < b.num * mid.denom()
+        //  mid.num * b.denom() = s.num * b.denom()
+        //                      = (an_bd + bn_ad) * b.denom()
+        //  b.num * mid.denom() = b.num * s.denom() * 2
+        //                      = b.num * a.denom() * b.denom() * 2
+        //                      = 2 * bn_ad * b.denom()
+        //  Need: (an_bd + bn_ad) * b.denom() < 2 * bn_ad * b.denom()
+        //  Since b.denom() > 0: an_bd + bn_ad < 2 * bn_ad
+        //  i.e. an_bd < bn_ad ✓
 
         assert(mid.num * b.denom() == s.num * b.denom());
         assert(b.num * mid.denom() == b.num * (s.denom() * 2));
@@ -592,9 +592,9 @@ impl Rational {
         ;
     }
 
-    // ── Sign of products ─────────────────────────────────────────────
+    //  ── Sign of products ─────────────────────────────────────────────
 
-    /// Positive times positive is positive.
+    ///  Positive times positive is positive.
     pub proof fn lemma_pos_mul_pos(a: Self, b: Self)
         requires
             Self::from_int_spec(0).lt_spec(a),
@@ -607,7 +607,7 @@ impl Rational {
         Self::lemma_denom_positive(b);
         assert(z.num == 0);
         assert(z.denom() == 1);
-        // 0 < a means 0 * a.denom() < a.num * 1, i.e. 0 < a.num
+        //  0 < a means 0 * a.denom() < a.num * 1, i.e. 0 < a.num
         assert(a.num > 0) by (nonlinear_arith)
             requires z.lt_spec(a), z.num == 0, z.denom() == 1;
         assert(b.num > 0) by (nonlinear_arith)
@@ -623,7 +623,7 @@ impl Rational {
         assert((z.denom() == 1) ==> ab.num * z.denom() == ab.num) by (nonlinear_arith);
     }
 
-    /// Negative times negative is positive.
+    ///  Negative times negative is positive.
     pub proof fn lemma_neg_mul_neg(a: Self, b: Self)
         requires
             a.lt_spec(Self::from_int_spec(0)),
@@ -649,7 +649,7 @@ impl Rational {
         assert((z.denom() == 1) ==> ab.num * z.denom() == ab.num) by (nonlinear_arith);
     }
 
-    /// Positive times negative is negative.
+    ///  Positive times negative is negative.
     pub proof fn lemma_pos_mul_neg(a: Self, b: Self)
         requires
             Self::from_int_spec(0).lt_spec(a),
@@ -676,7 +676,7 @@ impl Rational {
         assert((z.denom() == 1) ==> ab.num * z.denom() == ab.num) by (nonlinear_arith);
     }
 
-    /// Negative times positive is negative.
+    ///  Negative times positive is negative.
     pub proof fn lemma_neg_mul_pos(a: Self, b: Self)
         requires
             a.lt_spec(Self::from_int_spec(0)),
@@ -688,7 +688,7 @@ impl Rational {
         Self::lemma_pos_mul_neg(b, a);
     }
 
-    /// If either factor is zero, the product is zero.
+    ///  If either factor is zero, the product is zero.
     pub proof fn lemma_zero_mul_sign(a: Self, b: Self)
         requires
             a.eqv_spec(Self::from_int_spec(0))
@@ -712,9 +712,9 @@ impl Rational {
         }
     }
 
-    // ── Strict ordering + arithmetic ─────────────────────────────────
+    //  ── Strict ordering + arithmetic ─────────────────────────────────
 
-    /// Strict addition monotonicity: a < b → a + c < b + c.
+    ///  Strict addition monotonicity: a < b → a + c < b + c.
     pub proof fn lemma_lt_add_monotone(a: Self, b: Self, c: Self)
         requires
             a.lt_spec(b),
@@ -733,7 +733,7 @@ impl Rational {
         assert(ac.denom() == a.denom() * c.denom());
         assert(bc.denom() == b.denom() * c.denom());
         assert(a.num * b.denom() < b.num * a.denom());
-        // ac < bc means ac.num * bc.denom() < bc.num * ac.denom()
+        //  ac < bc means ac.num * bc.denom() < bc.num * ac.denom()
         assert((a.num * b.denom() < b.num * a.denom()
             && c.denom() > 0 && a.denom() > 0 && b.denom() > 0)
             ==> (a.num * c.denom() + c.num * a.denom()) * (b.denom() * c.denom())
@@ -741,7 +741,7 @@ impl Rational {
             by (nonlinear_arith);
     }
 
-    /// Strict multiplication monotonicity with positive factor.
+    ///  Strict multiplication monotonicity with positive factor.
     pub proof fn lemma_lt_mul_positive(a: Self, b: Self, c: Self)
         requires
             a.lt_spec(b),
@@ -772,7 +772,7 @@ impl Rational {
             by (nonlinear_arith);
     }
 
-    /// Strict multiplication with negative factor reverses order.
+    ///  Strict multiplication with negative factor reverses order.
     pub proof fn lemma_lt_mul_negative(a: Self, b: Self, c: Self)
         requires
             a.lt_spec(b),
@@ -797,52 +797,52 @@ impl Rational {
         assert(ac.denom() == a.denom() * c.denom());
         assert(bc.denom() == b.denom() * c.denom());
         assert(a.num * b.denom() < b.num * a.denom());
-        // With c.num < 0, inequality reverses
+        //  With c.num < 0, inequality reverses
         assert((a.num * b.denom() < b.num * a.denom() && c.num < 0 && c.denom() > 0)
             ==> (b.num * c.num) * (a.denom() * c.denom())
                 < (a.num * c.num) * (b.denom() * c.denom()))
             by (nonlinear_arith);
     }
 
-    /// a < b ↔ 0 < b - a.
+    ///  a < b ↔ 0 < b - a.
     pub proof fn lemma_lt_sub_equiv(a: Self, b: Self)
         ensures
             a.lt_spec(b) == Self::from_int_spec(0).lt_spec(b.sub_spec(a)),
     {
         let z = Self::from_int_spec(0);
         let neg_a = a.neg_spec();
-        let diff = b.add_spec(neg_a); // == b.sub_spec(a)
+        let diff = b.add_spec(neg_a); //  == b.sub_spec(a)
         Self::lemma_denom_positive(a);
         Self::lemma_denom_positive(b);
         assert(z.num == 0);
         assert(z.denom() == 1);
-        // neg_a has same den as a, so same denom_nat/denom
+        //  neg_a has same den as a, so same denom_nat/denom
         assert(neg_a.den == a.den);
         assert(neg_a.denom_nat() == a.denom_nat());
         assert(neg_a.num == -a.num);
-        // Unfold add_spec: diff.num = b.num * (neg_a.denom_nat() as int) + neg_a.num * (b.denom_nat() as int)
-        //                           = b.num * a.denom() + (-a.num) * b.denom()
+        //  Unfold add_spec: diff.num = b.num * (neg_a.denom_nat() as int) + neg_a.num * (b.denom_nat() as int)
+        //                            = b.num * a.denom() + (-a.num) * b.denom()
         let da = a.denom();
         let db = b.denom();
         assert(diff.num == b.num * (neg_a.denom_nat() as int) + neg_a.num * (b.denom_nat() as int));
         assert(neg_a.denom_nat() as int == da);
         assert(b.denom_nat() as int == db);
         assert(diff.num == b.num * da + (-a.num) * db);
-        // (-a.num) * db == -(a.num * db)
+        //  (-a.num) * db == -(a.num * db)
         assert((-a.num) * db == -(a.num * db)) by (nonlinear_arith);
         assert(diff.num == b.num * da - a.num * db);
-        // a < b means a.num * b.denom() < b.num * a.denom()
-        // 0 < diff means 0 * diff.denom() < diff.num * z.denom()
-        //   i.e. 0 < diff.num (since z.denom() == 1)
-        //   i.e. b.num * da - a.num * db > 0
-        //   i.e. a.num * db < b.num * da
+        //  a < b means a.num * b.denom() < b.num * a.denom()
+        //  0 < diff means 0 * diff.denom() < diff.num * z.denom()
+        //    i.e. 0 < diff.num (since z.denom() == 1)
+        //    i.e. b.num * da - a.num * db > 0
+        //    i.e. a.num * db < b.num * da
         lemma_mul_by_zero_is_zero(diff.denom());
         assert((z.denom() == 1) ==> diff.num * z.denom() == diff.num) by (nonlinear_arith);
     }
 
-    // ── Negation reverses ordering ───────────────────────────────────
+    //  ── Negation reverses ordering ───────────────────────────────────
 
-    /// a ≤ b → -b ≤ -a.
+    ///  a ≤ b → -b ≤ -a.
     pub proof fn lemma_neg_reverses_le(a: Self, b: Self)
         requires
             a.le_spec(b),
@@ -858,14 +858,14 @@ impl Rational {
         assert(na.denom() == a.denom());
         assert(nb.denom() == b.denom());
         assert(a.num * b.denom() <= b.num * a.denom());
-        // Need: nb.num * na.denom() <= na.num * nb.denom()
-        // i.e. (-b.num) * a.denom() <= (-a.num) * b.denom()
+        //  Need: nb.num * na.denom() <= na.num * nb.denom()
+        //  i.e. (-b.num) * a.denom() <= (-a.num) * b.denom()
         assert((-b.num) * a.denom() <= (-a.num) * b.denom()
             <==> a.num * b.denom() <= b.num * a.denom())
             by (nonlinear_arith);
     }
 
-    /// a < b → -b < -a.
+    ///  a < b → -b < -a.
     pub proof fn lemma_neg_reverses_lt(a: Self, b: Self)
         requires
             a.lt_spec(b),
@@ -886,18 +886,18 @@ impl Rational {
             by (nonlinear_arith);
     }
 
-    /// a ≤ b → a - c ≤ b - c.
+    ///  a ≤ b → a - c ≤ b - c.
     pub proof fn lemma_sub_le_monotone_left(a: Self, b: Self, c: Self)
         requires
             a.le_spec(b),
         ensures
             a.sub_spec(c).le_spec(b.sub_spec(c)),
     {
-        // a - c = a + (-c), b - c = b + (-c)
+        //  a - c = a + (-c), b - c = b + (-c)
         Self::lemma_le_add_monotone(a, b, c.neg_spec());
     }
 
-    /// a ≤ b → c - b ≤ c - a (reversal in second arg).
+    ///  a ≤ b → c - b ≤ c - a (reversal in second arg).
     pub proof fn lemma_sub_le_monotone_right(a: Self, b: Self, c: Self)
         requires
             a.le_spec(b),
@@ -905,15 +905,15 @@ impl Rational {
             c.sub_spec(b).le_spec(c.sub_spec(a)),
     {
         Self::lemma_neg_reverses_le(a, b);
-        // -b ≤ -a
+        //  -b ≤ -a
         Self::lemma_le_add_monotone(b.neg_spec(), a.neg_spec(), c);
-        // c + (-b) ≤ c + (-a)
-        // which is c - b ≤ c - a
+        //  c + (-b) ≤ c + (-a)
+        //  which is c - b ≤ c - a
     }
 
-    // ── Bilateral addition monotonicity ──────────────────────────────
+    //  ── Bilateral addition monotonicity ──────────────────────────────
 
-    /// a ≤ b ∧ c ≤ d → a + c ≤ b + d.
+    ///  a ≤ b ∧ c ≤ d → a + c ≤ b + d.
     pub proof fn lemma_le_add_both(a: Self, b: Self, c: Self, d: Self)
         requires
             a.le_spec(b),
@@ -922,15 +922,15 @@ impl Rational {
             a.add_spec(c).le_spec(b.add_spec(d)),
     {
         Self::lemma_le_add_monotone(a, b, c);
-        // a + c ≤ b + c
+        //  a + c ≤ b + c
         Self::lemma_add_commutative(b, c);
         Self::lemma_add_commutative(b, d);
         Self::lemma_le_add_monotone(c, d, b);
-        // c + b ≤ d + b, i.e. b + c ≤ b + d
+        //  c + b ≤ d + b, i.e. b + c ≤ b + d
         Self::lemma_le_transitive(a.add_spec(c), b.add_spec(c), b.add_spec(d));
     }
 
-    /// a < b ∧ c < d → a + c < b + d.
+    ///  a < b ∧ c < d → a + c < b + d.
     pub proof fn lemma_lt_add_both(a: Self, b: Self, c: Self, d: Self)
         requires
             a.lt_spec(b),
@@ -945,7 +945,7 @@ impl Rational {
         Self::lemma_lt_transitive(a.add_spec(c), b.add_spec(c), b.add_spec(d));
     }
 
-    /// a ≤ b ∧ c < d → a + c < b + d.
+    ///  a ≤ b ∧ c < d → a + c < b + d.
     pub proof fn lemma_le_lt_add(a: Self, b: Self, c: Self, d: Self)
         requires
             a.le_spec(b),
@@ -954,19 +954,19 @@ impl Rational {
             a.add_spec(c).lt_spec(b.add_spec(d)),
     {
         Self::lemma_le_add_monotone(a, b, c);
-        // a + c ≤ b + c
+        //  a + c ≤ b + c
         Self::lemma_add_commutative(b, c);
         Self::lemma_add_commutative(b, d);
         Self::lemma_lt_add_monotone(c, d, b);
-        // b + c < b + d
+        //  b + c < b + d
         Self::lemma_le_iff_lt_or_eqv(a.add_spec(c), b.add_spec(c));
         if a.add_spec(c).lt_spec(b.add_spec(c)) {
             Self::lemma_lt_transitive(a.add_spec(c), b.add_spec(c), b.add_spec(d));
         } else {
-            // a+c ≡ b+c, and b+c < b+d
-            // So a+c < b+d via eqv + lt
+            //  a+c ≡ b+c, and b+c < b+d
+            //  So a+c < b+d via eqv + lt
             assert(a.add_spec(c).eqv_spec(b.add_spec(c)));
-            // eqv means same cross-product
+            //  eqv means same cross-product
             let ac = a.add_spec(c);
             let bc = b.add_spec(c);
             let bd = b.add_spec(d);
@@ -975,8 +975,8 @@ impl Rational {
             Self::lemma_denom_positive(ac);
             Self::lemma_denom_positive(bc);
             Self::lemma_denom_positive(bd);
-            // ac.num * bd.denom() = (ac.num * bc.denom()) * bd.denom() / bc.denom()
-            // but we can do: ac.num * bd.denom() < bd.num * ac.denom()
+            //  ac.num * bd.denom() = (ac.num * bc.denom()) * bd.denom() / bc.denom()
+            //  but we can do: ac.num * bd.denom() < bd.num * ac.denom()
             assert((ac.num * bc.denom() == bc.num * ac.denom()
                 && bc.num * bd.denom() < bd.num * bc.denom()
                 && bc.denom() > 0 && ac.denom() > 0)
@@ -987,4 +987,4 @@ impl Rational {
 
 }
 
-} // verus!
+} //  verus!

@@ -4,14 +4,14 @@ use vstd::prelude::*;
 verus! {
 
 impl Rational {
-    // ── Quadratic discriminant ────────────────────────────
+    //  ── Quadratic discriminant ────────────────────────────
 
     pub open spec fn discriminant_spec(a: Self, b: Self, c: Self) -> Self {
         b.mul_spec(b).sub_spec(
             Self::from_int_spec(4).mul_spec(a.mul_spec(c)))
     }
 
-    /// If t is a rational root of ax²+bx+c, verify it satisfies the equation.
+    ///  If t is a rational root of ax²+bx+c, verify it satisfies the equation.
     pub proof fn lemma_quadratic_at_rational_root(a: Self, b: Self, c: Self, t: Self)
         requires
             a.mul_spec(t.mul_spec(t)).add_spec(b.mul_spec(t)).add_spec(c)
@@ -20,13 +20,13 @@ impl Rational {
             a.mul_spec(t).mul_spec(t).add_spec(b.mul_spec(t)).add_spec(c)
                 .eqv_spec(Self::from_int_spec(0)),
     {
-        // a*(t*t) ≡ (a*t)*t by associativity (backward)
+        //  a*(t*t) ≡ (a*t)*t by associativity (backward)
         Self::lemma_mul_associative(a, t, t);
         Self::lemma_eqv_symmetric(
             a.mul_spec(t).mul_spec(t),
             a.mul_spec(t.mul_spec(t)),
         );
-        // Replace a*(t*t) with (a*t)*t in the sum
+        //  Replace a*(t*t) with (a*t)*t in the sum
         Self::lemma_eqv_add_congruence_left(
             a.mul_spec(t.mul_spec(t)),
             a.mul_spec(t).mul_spec(t),
@@ -44,7 +44,7 @@ impl Rational {
         );
     }
 
-    /// When disc = 0 and a ≢ 0, the double root -b/(2a) satisfies ax²+bx+c = 0.
+    ///  When disc = 0 and a ≢ 0, the double root -b/(2a) satisfies ax²+bx+c = 0.
     pub proof fn lemma_quadratic_double_root(a: Self, b: Self, c: Self)
         requires
             !a.eqv_spec(Self::from_int_spec(0)),
@@ -64,7 +64,7 @@ impl Rational {
         let t = nb.div_spec(two_a);
 
         Self::lemma_eqv_zero_iff_num_zero(a);
-        // 2a ≢ 0 since a ≢ 0
+        //  2a ≢ 0 since a ≢ 0
         Self::lemma_eqv_zero_iff_num_zero(two_a);
         Self::lemma_mul_denom_product_int(two, a);
         assert(two.num == 2);
@@ -73,97 +73,97 @@ impl Rational {
         assert(two_a.num != 0) by (nonlinear_arith)
             requires a.num != 0, two_a.num == 2 * a.num;
 
-        // Algebraic approach: factor a*t²+b*t = t*(a*t+b), show a*t+b ≡ b/2,
-        // then show (b/2)*t + c ≡ 0 using disc=0.
+        //  Algebraic approach: factor a*t²+b*t = t*(a*t+b), show a*t+b ≡ b/2,
+        //  then show (b/2)*t + c ≡ 0 using disc=0.
 
-        // Step 1: 2a*t ≡ -b (from div_cancel)
+        //  Step 1: 2a*t ≡ -b (from div_cancel)
         Self::lemma_div_cancel(two_a, nb);
-        // two_a * t ≡ nb
+        //  two_a * t ≡ nb
 
-        // Step 2: Derive 2*(a*t) ≡ -b using associativity
+        //  Step 2: Derive 2*(a*t) ≡ -b using associativity
         let at_ = a.mul_spec(t);
         Self::lemma_mul_associative(two, a, t);
-        // (two*a)*t ≡ two*(a*t), i.e., two_a*t ≡ two*at_
+        //  (two*a)*t ≡ two*(a*t), i.e., two_a*t ≡ two*at_
         Self::lemma_eqv_symmetric(two.mul_spec(a).mul_spec(t), two.mul_spec(a.mul_spec(t)));
-        // two*at_ ≡ two_a*t
+        //  two*at_ ≡ two_a*t
         Self::lemma_eqv_transitive(two.mul_spec(at_), two_a.mul_spec(t), nb);
-        // two*at_ ≡ nb
+        //  two*at_ ≡ nb
 
-        // Step 3: a*t ≡ -b/2 by cancellation
+        //  Step 3: a*t ≡ -b/2 by cancellation
         let recip_two = two.reciprocal_spec();
-        let half_nb = nb.div_spec(two);   // = nb * recip(2) = -b/2
-        let half_b = b.div_spec(two);     // = b * recip(2) = b/2
+        let half_nb = nb.div_spec(two);   //  = nb * recip(2) = -b/2
+        let half_b = b.div_spec(two);     //  = b * recip(2) = b/2
 
         Self::lemma_eqv_zero_iff_num_zero(two);
         Self::lemma_div_cancel(two, nb);
-        // two * half_nb ≡ nb
+        //  two * half_nb ≡ nb
         Self::lemma_eqv_symmetric(two.mul_spec(half_nb), nb);
-        // nb ≡ two * half_nb
+        //  nb ≡ two * half_nb
         Self::lemma_eqv_transitive(two.mul_spec(at_), nb, two.mul_spec(half_nb));
-        // two*at_ ≡ two*half_nb
+        //  two*at_ ≡ two*half_nb
         Self::lemma_mul_cancel_left(at_, half_nb, two);
-        // at_ ≡ half_nb, i.e., a*t ≡ -b/2
+        //  at_ ≡ half_nb, i.e., a*t ≡ -b/2
 
-        // Step 4: Show half_nb == half_b.neg_spec() (structural)
+        //  Step 4: Show half_nb == half_b.neg_spec() (structural)
         Self::lemma_mul_commutative(nb, recip_two);
         Self::lemma_mul_neg_right(recip_two, b);
         Self::lemma_mul_commutative(recip_two, b);
-        // half_nb = nb * recip_two == recip_two * nb == recip_two * b.neg_spec()
-        //         == (recip_two * b).neg_spec() == (b * recip_two).neg_spec()
-        //         == half_b.neg_spec()
+        //  half_nb = nb * recip_two == recip_two * nb == recip_two * b.neg_spec()
+        //          == (recip_two * b).neg_spec() == (b * recip_two).neg_spec()
+        //          == half_b.neg_spec()
         assert(half_nb == half_b.neg_spec());
 
-        // Step 5: a*t + b ≡ half_b
-        // First show b ≡ half_b + half_b:
+        //  Step 5: a*t + b ≡ half_b
+        //  First show b ≡ half_b + half_b:
         Self::lemma_div_cancel(two, b);
-        // two * half_b ≡ b
+        //  two * half_b ≡ b
         Self::lemma_double(half_b);
-        // half_b + half_b ≡ two * half_b
+        //  half_b + half_b ≡ two * half_b
         Self::lemma_eqv_transitive(
             half_b.add_spec(half_b), two.mul_spec(half_b), b);
-        // half_b + half_b ≡ b
+        //  half_b + half_b ≡ b
         Self::lemma_eqv_symmetric(half_b.add_spec(half_b), b);
-        // b ≡ half_b + half_b
+        //  b ≡ half_b + half_b
 
-        // at_ + b ≡ half_nb + b (by congruence with at_ ≡ half_nb)
+        //  at_ + b ≡ half_nb + b (by congruence with at_ ≡ half_nb)
         Self::lemma_eqv_add_congruence_left(at_, half_nb, b);
-        // at_ + b ≡ half_nb + b
+        //  at_ + b ≡ half_nb + b
 
-        // half_nb + b ≡ half_nb + (half_b + half_b) (by congruence)
+        //  half_nb + b ≡ half_nb + (half_b + half_b) (by congruence)
         Self::lemma_eqv_add_congruence_right(half_nb, b, half_b.add_spec(half_b));
-        // half_nb + b ≡ half_nb + (half_b + half_b)
+        //  half_nb + b ≡ half_nb + (half_b + half_b)
 
-        // (half_nb + half_b) + half_b ≡ half_nb + (half_b + half_b) (associativity)
+        //  (half_nb + half_b) + half_b ≡ half_nb + (half_b + half_b) (associativity)
         Self::lemma_add_associative(half_nb, half_b, half_b);
         Self::lemma_eqv_symmetric(
             half_nb.add_spec(half_b).add_spec(half_b),
             half_nb.add_spec(half_b.add_spec(half_b)));
-        // half_nb + (half_b + half_b) ≡ (half_nb + half_b) + half_b
+        //  half_nb + (half_b + half_b) ≡ (half_nb + half_b) + half_b
 
-        // half_nb + half_b ≡ 0 (since half_nb == -half_b)
+        //  half_nb + half_b ≡ 0 (since half_nb == -half_b)
         Self::lemma_add_commutative(half_nb, half_b);
-        // half_nb + half_b ≡ half_b + half_nb
-        // half_nb == half_b.neg_spec(), so half_b + half_nb == half_b + half_b.neg_spec()
-        //                              == half_b.sub_spec(half_b)
+        //  half_nb + half_b ≡ half_b + half_nb
+        //  half_nb == half_b.neg_spec(), so half_b + half_nb == half_b + half_b.neg_spec()
+        //                               == half_b.sub_spec(half_b)
         Self::lemma_sub_self(half_b);
-        // half_b.sub_spec(half_b) ≡ 0
-        // half_b + half_b.neg_spec() == half_b.sub_spec(half_b) [structural from sub_spec def]
+        //  half_b.sub_spec(half_b) ≡ 0
+        //  half_b + half_b.neg_spec() == half_b.sub_spec(half_b) [structural from sub_spec def]
         Self::lemma_eqv_transitive(
             half_nb.add_spec(half_b),
             half_b.add_spec(half_nb),
             Self::from_int_spec(0));
-        // half_nb + half_b ≡ 0
+        //  half_nb + half_b ≡ 0
 
-        // (half_nb + half_b) + half_b ≡ 0 + half_b (congruence)
+        //  (half_nb + half_b) + half_b ≡ 0 + half_b (congruence)
         Self::lemma_eqv_add_congruence_left(
             half_nb.add_spec(half_b),
             Self::from_int_spec(0),
             half_b);
-        // 0 + half_b == half_b (structural from add_zero_identity)
+        //  0 + half_b == half_b (structural from add_zero_identity)
         Self::lemma_add_zero_identity(half_b);
 
-        // Chain: at_ + b ≡ half_nb + b ≡ half_nb + (half_b + half_b)
-        //        ≡ (half_nb + half_b) + half_b ≡ 0 + half_b == half_b
+        //  Chain: at_ + b ≡ half_nb + b ≡ half_nb + (half_b + half_b)
+        //         ≡ (half_nb + half_b) + half_b ≡ 0 + half_b == half_b
         Self::lemma_eqv_transitive(
             at_.add_spec(b), half_nb.add_spec(b),
             half_nb.add_spec(half_b.add_spec(half_b)));
@@ -175,11 +175,11 @@ impl Rational {
             at_.add_spec(b),
             half_nb.add_spec(half_b).add_spec(half_b),
             Self::from_int_spec(0).add_spec(half_b));
-        // at_ + b ≡ 0 + half_b == half_b
-        // So at_ + b ≡ half_b (via eqv with the structural == step)
+        //  at_ + b ≡ 0 + half_b == half_b
+        //  So at_ + b ≡ half_b (via eqv with the structural == step)
         Self::lemma_eqv_reflexive(half_b);
 
-        // Step 6: Factor: a*(t*t) + b*t ≡ (a*t + b) * t
+        //  Step 6: Factor: a*(t*t) + b*t ≡ (a*t + b) * t
         let tt = t.mul_spec(t);
         let att = a.mul_spec(tt);
         let bt = b.mul_spec(t);
@@ -187,45 +187,45 @@ impl Rational {
         let at_b = at_.add_spec(b);
         let at_b_t = at_b.mul_spec(t);
 
-        // (a*t + b)*t ≡ (a*t)*t + b*t  [distributive]
+        //  (a*t + b)*t ≡ (a*t)*t + b*t  [distributive]
         Self::lemma_eqv_mul_distributive_right(at_, b, t);
-        // at_b * t ≡ at_*t + b*t
+        //  at_b * t ≡ at_*t + b*t
 
-        // (a*t)*t ≡ a*(t*t)  [associativity]
+        //  (a*t)*t ≡ a*(t*t)  [associativity]
         Self::lemma_mul_associative(a, t, t);
         Self::lemma_eqv_add_congruence_left(
             a.mul_spec(t).mul_spec(t), a.mul_spec(t.mul_spec(t)), bt);
-        // (a*t)*t + bt ≡ a*(t*t) + bt = att + bt = att_bt
+        //  (a*t)*t + bt ≡ a*(t*t) + bt = att + bt = att_bt
 
-        // at_b_t ≡ at_*t + bt ≡ att_bt
+        //  at_b_t ≡ at_*t + bt ≡ att_bt
         Self::lemma_eqv_transitive(at_b_t, at_.mul_spec(t).add_spec(bt), att_bt);
-        // att_bt ≡ at_b_t [symmetric]
+        //  att_bt ≡ at_b_t [symmetric]
         Self::lemma_eqv_symmetric(at_b_t, att_bt);
 
-        // Step 7: att_bt ≡ half_b * t (via congruence)
+        //  Step 7: att_bt ≡ half_b * t (via congruence)
         let half_b_t = half_b.mul_spec(t);
-        // at_b ≡ half_b (from step 5, eqv chain above)
-        // We need to establish at_b ≡ half_b properly for mul_congruence
-        // at_ + b ≡ z + half_b, and z + half_b == half_b structurally
-        // So at_b.eqv_spec(half_b)
+        //  at_b ≡ half_b (from step 5, eqv chain above)
+        //  We need to establish at_b ≡ half_b properly for mul_congruence
+        //  at_ + b ≡ z + half_b, and z + half_b == half_b structurally
+        //  So at_b.eqv_spec(half_b)
         Self::lemma_eqv_mul_congruence_left(at_b, half_b, t);
-        // at_b_t ≡ half_b_t
+        //  at_b_t ≡ half_b_t
 
-        // att_bt ≡ at_b_t ≡ half_b_t
+        //  att_bt ≡ at_b_t ≡ half_b_t
         Self::lemma_eqv_transitive(att_bt, at_b_t, half_b_t);
-        // att_bt ≡ half_b_t
+        //  att_bt ≡ half_b_t
 
-        // Step 8: expr = att_bt + c ≡ half_b_t + c
+        //  Step 8: expr = att_bt + c ≡ half_b_t + c
         let expr = att_bt.add_spec(c);
         let result = half_b_t.add_spec(c);
         Self::lemma_eqv_add_congruence_left(att_bt, half_b_t, c);
-        // expr ≡ result
+        //  expr ≡ result
 
-        // Step 9: Show result ≡ 0 at the numerator level.
-        // half_b.num = b.num, half_b.denom() = 2 * b.denom()
-        // (since from_int(2).reciprocal_spec() = Rational{num:1, den:1},
-        //  so half_b = b * Rational{num:1, den:1}, half_b.num = b.num*1,
-        //  half_b.denom() = b.denom() * 2)
+        //  Step 9: Show result ≡ 0 at the numerator level.
+        //  half_b.num = b.num, half_b.denom() = 2 * b.denom()
+        //  (since from_int(2).reciprocal_spec() = Rational{num:1, den:1},
+        //   so half_b = b * Rational{num:1, den:1}, half_b.num = b.num*1,
+        //   half_b.denom() = b.denom() * 2)
         Self::lemma_mul_denom_product_int(b, recip_two);
         assert(recip_two.num == 1);
         assert(recip_two.denom() == 2);
@@ -247,17 +247,17 @@ impl Rational {
         let ghost an = a.num;
         let ghost ad = a.denom();
 
-        // half_b_t.num = half_b.num * t.num = bn * tn
-        // half_b_t.denom() = half_b.denom() * t.denom() = 2*bd * td
-        // result.num = half_b_t.num * c.denom() + c.num * half_b_t.denom()
-        //            = bn*tn*cd + cn*2*bd*td
+        //  half_b_t.num = half_b.num * t.num = bn * tn
+        //  half_b_t.denom() = half_b.denom() * t.denom() = 2*bd * td
+        //  result.num = half_b_t.num * c.denom() + c.num * half_b_t.denom()
+        //             = bn*tn*cd + cn*2*bd*td
         assert(result.num == bn * tn * cd + cn * (2 * bd) * td) by (nonlinear_arith)
             requires
                 result.num == half_b_t.num * cd + cn * half_b_t.denom(),
                 half_b_t.num == bn * tn,
                 half_b_t.denom() == (bd * 2) * td;
 
-        // From 2a*t ≡ -b, extract cross-multiplication:
+        //  From 2a*t ≡ -b, extract cross-multiplication:
         Self::lemma_mul_denom_product_int(two_a, t);
         assert(2 * an * tn * bd == -(bn * ad * td)) by (nonlinear_arith)
             requires
@@ -269,7 +269,7 @@ impl Rational {
                 nb.num == -bn,
                 nb.denom() == bd;
 
-        // From disc ≡ 0: b² ≡ 4ac (cross-multiplication)
+        //  From disc ≡ 0: b² ≡ 4ac (cross-multiplication)
         let bb = b.mul_spec(b);
         let ac_ = a.mul_spec(c);
         let four_ac = four.mul_spec(ac_);
@@ -289,10 +289,10 @@ impl Rational {
                 four.denom() == 1,
                 ac_.denom() == ad * cd;
 
-        // Show result.num == 0 by case split on bn
-        // (bn*tn*cd + 2*cn*bd*td) * (bn*ad) = 0, using both constraints
+        //  Show result.num == 0 by case split on bn
+        //  (bn*tn*cd + 2*cn*bd*td) * (bn*ad) = 0, using both constraints
         if bn == 0 {
-            // From disc: 0 = 4*an*cn*bd², so cn = 0
+            //  From disc: 0 = 4*an*cn*bd², so cn = 0
             assert(cn == 0) by (nonlinear_arith)
                 requires bn * bn * (ad * cd) == 4 * an * cn * (bd * bd),
                     bn == 0, an != 0, bd > 0;
@@ -300,21 +300,21 @@ impl Rational {
                 requires result.num == bn * tn * cd + cn * (2 * bd) * td,
                     bn == 0, cn == 0;
         } else {
-            // Multiply (bn*tn*cd) by (bn*ad), use (**):
-            // bn*ad*(bn*tn*cd) = bn²*ad*cd*tn
-            // From (*): bn²*ad*cd = 4*an*cn*bd²
-            // So = 4*an*cn*bd²*tn
+            //  Multiply (bn*tn*cd) by (bn*ad), use (**):
+            //  bn*ad*(bn*tn*cd) = bn²*ad*cd*tn
+            //  From (*): bn²*ad*cd = 4*an*cn*bd²
+            //  So = 4*an*cn*bd²*tn
 
-            // Multiply (2*cn*bd*td) by (bn*ad), use (**):
-            // bn*ad*(2*cn*bd*td) = 2*cn*bd*(bn*ad*td) = 2*cn*bd*(-2*an*tn*bd)
-            // = -4*an*cn*bd²*tn
+            //  Multiply (2*cn*bd*td) by (bn*ad), use (**):
+            //  bn*ad*(2*cn*bd*td) = 2*cn*bd*(bn*ad*td) = 2*cn*bd*(-2*an*tn*bd)
+            //  = -4*an*cn*bd²*tn
 
-            // Sum = 4*an*cn*bd²*tn - 4*an*cn*bd²*tn = 0
+            //  Sum = 4*an*cn*bd²*tn - 4*an*cn*bd²*tn = 0
             let ghost P = bn * tn * cd;
             let ghost Q = 2 * cn * bd * td;
             let ghost ba = bn * ad;
 
-            // P*ba = bn²*ad*tn*cd = (bn²*ad*cd)*tn = 4*an*cn*bd²*tn
+            //  P*ba = bn²*ad*tn*cd = (bn²*ad*cd)*tn = 4*an*cn*bd²*tn
             let ghost P_ba = P * ba;
             let ghost disc_factor = bn * bn * ad * cd;
             assert(disc_factor == 4 * an * cn * bd * bd) by (nonlinear_arith)
@@ -327,7 +327,7 @@ impl Rational {
                 requires P_ba == disc_factor * tn,
                     disc_factor == 4 * an * cn * bd * bd;
 
-            // Q*ba = 2*cn*bd*td*bn*ad = 2*cn*bd*(bn*ad*td)
+            //  Q*ba = 2*cn*bd*td*bn*ad = 2*cn*bd*(bn*ad*td)
             let ghost Q_ba = Q * ba;
             let ghost bat = bn * ad * td;
             assert(bat == -(2 * an * tn * bd)) by (nonlinear_arith)
@@ -339,7 +339,7 @@ impl Rational {
                 requires Q_ba == 2 * cn * bd * bat,
                     bat == -(2 * an * tn * bd);
 
-            // (P + Q) * ba = P_ba + Q_ba = 0
+            //  (P + Q) * ba = P_ba + Q_ba = 0
             assert(P_ba + Q_ba == 0) by (nonlinear_arith)
                 requires P_ba == 4 * an * cn * bd * bd * tn,
                     Q_ba == -(4 * an * cn * bd * bd * tn);
@@ -347,7 +347,7 @@ impl Rational {
                 requires P_ba + Q_ba == 0, P_ba == P * ba, Q_ba == Q * ba;
             assert(P + Q == 0) by (nonlinear_arith)
                 requires (P + Q) * ba == 0, ba == bn * ad, bn != 0, ad > 0;
-            // Bridge: cn*(2*bd)*td == 2*cn*bd*td
+            //  Bridge: cn*(2*bd)*td == 2*cn*bd*td
             assert(result.num == P + Q) by (nonlinear_arith)
                 requires result.num == bn * tn * cd + cn * (2 * bd) * td,
                     P == bn * tn * cd, Q == 2 * cn * bd * td;
@@ -356,11 +356,11 @@ impl Rational {
         }
 
         Self::lemma_eqv_zero_iff_num_zero(result);
-        // result ≡ 0, and expr ≡ result
+        //  result ≡ 0, and expr ≡ result
         Self::lemma_eqv_transitive(expr, result, Self::from_int_spec(0));
     }
 
-    /// Helper: completing the square shows w² = (β²-4αγ)·td² where inner=0.
+    ///  Helper: completing the square shows w² = (β²-4αγ)·td² where inner=0.
     proof fn lemma_complete_square(
         alpha: int, beta: int, gamma: int, tn: int, td_: int,
     )
@@ -375,7 +375,7 @@ impl Rational {
         let ghost inner = alpha * tn * tn + beta * tn * td_ + gamma * td_ * td_;
         let ghost w = 2 * alpha * tn + beta * td_;
 
-        // w² via FOIL: w = p + q where p = 2αtn, q = βtd
+        //  w² via FOIL: w = p + q where p = 2αtn, q = βtd
         let ghost w_sq = w * w;
         let ghost p = 2 * alpha * tn;
         let ghost q = beta * td_;
@@ -401,7 +401,7 @@ impl Rational {
             requires w_sq == pp + 2 * pq + qq,
                 pp == expand1, 2 * pq == expand2, qq == expand3;
 
-        // From inner == 0: 4*alpha*(alpha*tn² + beta*tn*td) = -4*alpha*gamma*td²
+        //  From inner == 0: 4*alpha*(alpha*tn² + beta*tn*td) = -4*alpha*gamma*td²
         let ghost four_alpha_inner_part = 4 * alpha * (alpha * tn * tn + beta * tn * td_);
         assert(four_alpha_inner_part == -(4 * alpha * gamma * td_ * td_))
             by (nonlinear_arith)
@@ -429,7 +429,7 @@ impl Rational {
                 expand3 == beta * beta * td_ * td_;
     }
 
-    /// Helper: show disc_num * ad_ * cd_ == beta² - 4*alpha*gamma.
+    ///  Helper: show disc_num * ad_ * cd_ == beta² - 4*alpha*gamma.
     proof fn lemma_disc_num_relation(
         an: int, bn: int, cn: int, ad_: int, bd_: int, cd_: int,
         disc_num: int,
@@ -484,7 +484,7 @@ impl Rational {
                 part1 == beta_sq, part2 == four_ag;
     }
 
-    /// If a*t²+b*t+c ≡ 0 and a ≢ 0, then discriminant b²-4ac ≥ 0.
+    ///  If a*t²+b*t+c ≡ 0 and a ≢ 0, then discriminant b²-4ac ≥ 0.
     pub proof fn lemma_discriminant_nonneg_square(a: Self, b: Self, c: Self, t: Self)
         requires
             a.mul_spec(t.mul_spec(t)).add_spec(b.mul_spec(t)).add_spec(c)
@@ -499,12 +499,12 @@ impl Rational {
         let att_bt = att.add_spec(bt);
         let expr = att_bt.add_spec(c);
 
-        // expr ≡ 0 ↔ expr.num == 0
+        //  expr ≡ 0 ↔ expr.num == 0
         Self::lemma_eqv_zero_iff_num_zero(expr);
-        // a ≢ 0 ↔ a.num != 0
+        //  a ≢ 0 ↔ a.num != 0
         Self::lemma_eqv_zero_iff_num_zero(a);
 
-        // Structural facts
+        //  Structural facts
         Self::lemma_mul_denom_product_int(t, t);
         Self::lemma_mul_denom_product_int(a, tt);
         Self::lemma_mul_denom_product_int(b, t);
@@ -515,7 +515,7 @@ impl Rational {
         Self::lemma_denom_positive(c);
         Self::lemma_denom_positive(t);
 
-        // Discriminant structural facts
+        //  Discriminant structural facts
         let bb = b.mul_spec(b);
         let ac_ = a.mul_spec(c);
         let four = Self::from_int_spec(4);
@@ -537,19 +537,19 @@ impl Rational {
         let ghost tn = t.num;
         let ghost td_ = t.denom();
 
-        // disc.num = bn²*ad*cd - 4*an*cn*bd²
+        //  disc.num = bn²*ad*cd - 4*an*cn*bd²
         assert(four.num == 4);
         assert(four.denom() == 1);
         assert(disc.num == bn * bn * (ad_ * cd_) + (-(4 * (an * cn))) * (bd_ * bd_));
 
         let ghost disc_num = bn * bn * (ad_ * cd_) + (-(4 * (an * cn))) * (bd_ * bd_);
 
-        // Ghost variables for completing the square
+        //  Ghost variables for completing the square
         let ghost alpha = an * bd_ * cd_;
         let ghost beta = bn * ad_ * cd_;
         let ghost gamma = cn * ad_ * bd_;
 
-        // Step 1: Factor expr.num as td * (alpha*tn² + beta*tn*td + gamma*td²)
+        //  Step 1: Factor expr.num as td * (alpha*tn² + beta*tn*td + gamma*td²)
         let ghost t1 = ((an * (tn * tn)) * (bd_ * td_)) * cd_;
         assert(t1 == alpha * tn * tn * td_) by (nonlinear_arith)
             requires t1 == ((an * (tn * tn)) * (bd_ * td_)) * cd_,
@@ -588,11 +588,11 @@ impl Rational {
                 t1 + t2 + t3 == td_ * inner,
                 td_ > 0;
 
-        // Steps 2-3: completing the square + disc_num relationship (via helpers)
+        //  Steps 2-3: completing the square + disc_num relationship (via helpers)
         Self::lemma_complete_square(alpha, beta, gamma, tn, td_);
         Self::lemma_disc_num_relation(an, bn, cn, ad_, bd_, cd_, disc_num);
 
-        // Step 4: Conclude disc_num ≥ 0
+        //  Step 4: Conclude disc_num ≥ 0
         let ghost w = 2 * alpha * tn + beta * td_;
         let ghost w_sq = w * w;
         assert(w_sq >= 0int) by (nonlinear_arith)
@@ -607,11 +607,11 @@ impl Rational {
                 disc_num * (ad_ * cd_ * td_ * td_) >= 0,
                 ad_ > 0, cd_ > 0, td_ > 0;
 
-        // le_spec: from_int(0).le_spec(disc) ↔ 0 * disc.denom() <= disc.num * 1
-        //        ↔ disc.num >= 0
+        //  le_spec: from_int(0).le_spec(disc) ↔ 0 * disc.denom() <= disc.num * 1
+        //         ↔ disc.num >= 0
         assert(disc.num == disc_num);
     }
 
 }
 
-} // verus!
+} //  verus!

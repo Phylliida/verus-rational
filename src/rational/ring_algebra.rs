@@ -10,7 +10,7 @@ use vstd::arithmetic::mul::{
 verus! {
 
 impl Rational {
-    /// a * b == b * a (structural equality).
+    ///  a * b == b * a (structural equality).
     pub proof fn lemma_mul_commutative(a: Self, b: Self)
         ensures
             a.mul_spec(b) == b.mul_spec(a),
@@ -28,7 +28,7 @@ impl Rational {
         assert(lhs.den == rhs.den);
     }
 
-    /// a - b == a + (-b) (structural equality).
+    ///  a - b == a + (-b) (structural equality).
     pub proof fn lemma_sub_is_add_neg(a: Self, b: Self)
         ensures
             a.sub_spec(b) == a.add_spec(b.neg_spec()),
@@ -36,7 +36,7 @@ impl Rational {
         assert(a.sub_spec(b) == a.add_spec(b.neg_spec()));
     }
 
-    /// -(-a) == a (structural equality).
+    ///  -(-a) == a (structural equality).
     pub proof fn lemma_neg_involution(a: Self)
         ensures
             a.neg_spec().neg_spec() == a,
@@ -49,7 +49,7 @@ impl Rational {
         assert(n == a);
     }
 
-    /// a + b ≡ b + a.
+    ///  a + b ≡ b + a.
     pub proof fn lemma_add_commutative(a: Self, b: Self)
         ensures
             a.add_spec(b).eqv_spec(b.add_spec(a)),
@@ -88,7 +88,7 @@ impl Rational {
         assert(l.eqv_spec(r));
     }
 
-    /// (a + b) + c ≡ a + (b + c).
+    ///  (a + b) + c ≡ a + (b + c).
     pub proof fn lemma_add_associative(a: Self, b: Self, c: Self)
         ensures
             a.add_spec(b).add_spec(c).eqv_spec(a.add_spec(b.add_spec(c))),
@@ -146,7 +146,7 @@ impl Rational {
         assert(lhs.eqv_spec(rhs));
     }
 
-    /// (a + b) + (c + d) ≡ (a + c) + (b + d).
+    ///  (a + b) + (c + d) ≡ (a + c) + (b + d).
     pub proof fn lemma_add_rearrange_2x2(a: Self, b: Self, c: Self, d: Self)
         ensures
             a.add_spec(b).add_spec(c.add_spec(d)).eqv_spec(a.add_spec(c).add_spec(b.add_spec(d))),
@@ -214,7 +214,7 @@ impl Rational {
         assert(e0.eqv_spec(e8));
     }
 
-    /// -(a + b) == (-a) + (-b) (structural equality).
+    ///  -(a + b) == (-a) + (-b) (structural equality).
     pub proof fn lemma_neg_add(a: Self, b: Self)
         ensures
             a.add_spec(b).neg_spec() == a.neg_spec().add_spec(b.neg_spec()),
@@ -239,7 +239,7 @@ impl Rational {
         assert(lhs.den == rhs.den);
     }
 
-    /// (a + b) - (c + d) ≡ (a - c) + (b - d).
+    ///  (a + b) - (c + d) ≡ (a - c) + (b - d).
     pub proof fn lemma_sub_add_distributes(a: Self, b: Self, c: Self, d: Self)
         ensures
             a.add_spec(b).sub_spec(c.add_spec(d)).eqv_spec(a.sub_spec(c).add_spec(b.sub_spec(d))),
@@ -303,7 +303,7 @@ impl Rational {
         assert(lhs.eqv_spec(rhs));
     }
 
-    /// (a - b) * k ≡ a*k - b*k.
+    ///  (a - b) * k ≡ a*k - b*k.
     pub proof fn lemma_sub_mul_right(a: Self, b: Self, k: Self)
         ensures
             a.sub_spec(b).mul_spec(k).eqv_spec(a.mul_spec(k).sub_spec(b.mul_spec(k))),
@@ -341,7 +341,7 @@ impl Rational {
         assert(lhs.eqv_spec(rhs));
     }
 
-    /// a + 0 == a and 0 + a == a (structural equality).
+    ///  a + 0 == a and 0 + a == a (structural equality).
     pub proof fn lemma_add_zero_identity(a: Self)
         ensures
             a.add_spec(Self::from_int_spec(0)) == a,
@@ -381,7 +381,7 @@ impl Rational {
         assert(r == a);
     }
 
-    /// a + (-a) ≡ 0 and (-a) + a ≡ 0.
+    ///  a + (-a) ≡ 0 and (-a) + a ≡ 0.
     pub proof fn lemma_add_inverse(a: Self)
         ensures
             a.add_spec(a.neg_spec()).eqv_spec(Self::from_int_spec(0)),
@@ -466,7 +466,7 @@ impl Rational {
         assert(r.eqv_spec(z));
     }
 
-    /// a * 1 == a and 1 * a == a (structural equality).
+    ///  a * 1 == a and 1 * a == a (structural equality).
     pub proof fn lemma_mul_one_identity(a: Self)
         ensures
             a.mul_spec(Self::from_int_spec(1)) == a,
@@ -502,7 +502,7 @@ impl Rational {
         assert(r == a);
     }
 
-    /// (a * b) * c ≡ a * (b * c).
+    ///  (a * b) * c ≡ a * (b * c).
     pub proof fn lemma_mul_associative(a: Self, b: Self, c: Self)
         ensures
             a.mul_spec(b).mul_spec(c).eqv_spec(a.mul_spec(b.mul_spec(c))),
@@ -547,7 +547,7 @@ impl Rational {
         assert(lhs.eqv_spec(rhs));
     }
 
-    /// a * 0 ≡ 0 and 0 * a ≡ 0.
+    ///  a * 0 ≡ 0 and 0 * a ≡ 0.
     pub proof fn lemma_mul_zero(a: Self)
         ensures
             a.mul_spec(Self::from_int_spec(0)).eqv_spec(Self::from_int_spec(0)),
@@ -567,7 +567,7 @@ impl Rational {
         assert(r.eqv_spec(z));
     }
 
-    /// a * (b + c) ≡ a*b + a*c.
+    ///  a * (b + c) ≡ a*b + a*c.
     pub proof fn lemma_mul_distributes_over_add(a: Self, b: Self, c: Self)
         ensures
             a.mul_spec(b.add_spec(c)).eqv_spec(a.mul_spec(b).add_spec(a.mul_spec(c))),
@@ -576,7 +576,7 @@ impl Rational {
         assert(a.mul_spec(b.add_spec(c)).eqv_spec(a.mul_spec(b).add_spec(a.mul_spec(c))));
     }
 
-    /// (a * b).num == 0 → a.num == 0 or b.num == 0.
+    ///  (a * b).num == 0 → a.num == 0 or b.num == 0.
     pub proof fn lemma_mul_zero_implies_factor_zero(a: Self, b: Self)
         requires
             a.mul_spec(b).num == 0,
@@ -589,7 +589,7 @@ impl Rational {
         assert(a.num == 0 || b.num == 0);
     }
 
-    /// a > 0 → a * a⁻¹ ≡ 1.
+    ///  a > 0 → a * a⁻¹ ≡ 1.
     pub proof fn lemma_mul_reciprocal_positive_num(a: Self)
         requires
             a.num > 0,
@@ -641,7 +641,7 @@ impl Rational {
         assert(rprod.eqv_spec(one));
     }
 
-    /// a ≢ 0 → returns inv with a * inv ≡ 1 and inv == a.reciprocal_spec().
+    ///  a ≢ 0 → returns inv with a * inv ≡ 1 and inv == a.reciprocal_spec().
     pub proof fn reciprocal_constructive(a: Self) -> (inv: Self)
         requires
             a.num != 0,
@@ -701,7 +701,7 @@ impl Rational {
         }
     }
 
-    /// a ≤ b → a + c ≤ b + c.
+    ///  a ≤ b → a + c ≤ b + c.
     pub proof fn lemma_le_add_monotone_strong(a: Self, b: Self, c: Self)
         requires
             a.le_spec(b),
@@ -731,7 +731,7 @@ impl Rational {
         assert(ac.le_spec(bc));
     }
 
-    /// a ≤ b → a + c ≤ b + c (convenience wrapper).
+    ///  a ≤ b → a + c ≤ b + c (convenience wrapper).
     pub proof fn lemma_le_add_monotone(a: Self, b: Self, c: Self)
         requires
             a.le_spec(b),
@@ -742,7 +742,7 @@ impl Rational {
         assert(a.add_spec(c).le_spec(b.add_spec(c)));
     }
 
-    /// a ≤ b ∧ 0 ≤ c → a*c ≤ b*c.
+    ///  a ≤ b ∧ 0 ≤ c → a*c ≤ b*c.
     pub proof fn lemma_le_mul_monotone_nonnegative_strong(a: Self, b: Self, c: Self)
         requires
             a.le_spec(b),
@@ -783,7 +783,7 @@ impl Rational {
         assert(ac.le_spec(bc));
     }
 
-    /// a ≤ b ∧ 0 ≤ c → a*c ≤ b*c (convenience wrapper).
+    ///  a ≤ b ∧ 0 ≤ c → a*c ≤ b*c (convenience wrapper).
     pub proof fn lemma_le_mul_monotone_nonnegative(a: Self, b: Self, c: Self)
         requires
             a.le_spec(b),
@@ -795,7 +795,7 @@ impl Rational {
         assert(a.mul_spec(c).le_spec(b.mul_spec(c)));
     }
 
-    /// a + k ≡ b + k → a ≡ b.
+    ///  a + k ≡ b + k → a ≡ b.
     pub proof fn lemma_add_right_cancel_strong(a: Self, b: Self, k: Self)
         requires
             a.add_spec(k).eqv_spec(b.add_spec(k)),
@@ -853,7 +853,7 @@ impl Rational {
         assert(a.eqv_spec(b));
     }
 
-    /// a + k ≡ b + k → a ≡ b (convenience wrapper).
+    ///  a + k ≡ b + k → a ≡ b (convenience wrapper).
     pub proof fn lemma_add_right_cancel(a: Self, b: Self, k: Self)
         requires
             a.add_spec(k).eqv_spec(b.add_spec(k)),
@@ -864,7 +864,7 @@ impl Rational {
         assert(a.eqv_spec(b));
     }
 
-    /// k + a ≡ k + b → a ≡ b.
+    ///  k + a ≡ k + b → a ≡ b.
     pub proof fn lemma_add_left_cancel_strong(a: Self, b: Self, k: Self)
         requires
             k.add_spec(a).eqv_spec(k.add_spec(b)),
@@ -891,7 +891,7 @@ impl Rational {
         assert(a.eqv_spec(b));
     }
 
-    /// k + a ≡ k + b → a ≡ b (convenience wrapper).
+    ///  k + a ≡ k + b → a ≡ b (convenience wrapper).
     pub proof fn lemma_add_left_cancel(a: Self, b: Self, k: Self)
         requires
             k.add_spec(a).eqv_spec(k.add_spec(b)),
@@ -902,7 +902,7 @@ impl Rational {
         assert(a.eqv_spec(b));
     }
 
-    /// (a + b) - a ≡ b.
+    ///  (a + b) - a ≡ b.
     pub proof fn lemma_add_then_sub_cancel(a: Self, b: Self)
         ensures
             a.add_spec(b).sub_spec(a).eqv_spec(b),
@@ -942,7 +942,7 @@ impl Rational {
         assert(lhs.eqv_spec(b));
     }
 
-    /// b + (a - b) ≡ a.
+    ///  b + (a - b) ≡ a.
     pub proof fn lemma_sub_then_add_cancel(a: Self, b: Self)
         ensures
             b.add_spec(a.sub_spec(b)).eqv_spec(a),
@@ -1001,7 +1001,7 @@ impl Rational {
         assert(lhs.eqv_spec(rhs));
     }
 
-    /// a - b ≡ 0 ↔ a ≡ b.
+    ///  a - b ≡ 0 ↔ a ≡ b.
     pub proof fn lemma_sub_eqv_zero_iff_eqv(a: Self, b: Self)
         ensures
             a.sub_spec(b).eqv_spec(Self::from_int_spec(0)) == a.eqv_spec(b),
@@ -1043,7 +1043,7 @@ impl Rational {
         assert((a.sub_spec(b).eqv_spec(z)) == a.eqv_spec(b));
     }
 
-    /// a - b == -(b - a) (structural equality).
+    ///  a - b == -(b - a) (structural equality).
     pub proof fn lemma_sub_antisymmetric(a: Self, b: Self)
         ensures
             a.sub_spec(b) == b.sub_spec(a).neg_spec(),
@@ -1065,7 +1065,7 @@ impl Rational {
         assert(lhs.den == rhs.den);
     }
 
-    /// a * (-b) == -(a * b) (structural equality).
+    ///  a * (-b) == -(a * b) (structural equality).
     pub proof fn lemma_mul_neg_right(a: Self, b: Self)
         ensures
             a.mul_spec(b.neg_spec()) == a.mul_spec(b).neg_spec(),
@@ -1086,7 +1086,7 @@ impl Rational {
         assert(lhs.den == rhs.den);
     }
 
-    /// (-a) - (-b) == -(a - b) (structural equality).
+    ///  (-a) - (-b) == -(a - b) (structural equality).
     pub proof fn lemma_sub_neg_both(a: Self, b: Self)
         ensures
             a.neg_spec().sub_spec(b.neg_spec()) == a.sub_spec(b).neg_spec(),
@@ -1134,7 +1134,7 @@ impl Rational {
         assert(lhs.den == rhs.den);
     }
 
-    /// (a - a).num == 0.
+    ///  (a - a).num == 0.
     pub proof fn lemma_sub_self_zero_num(a: Self)
         ensures
             a.sub_spec(a).num == 0,
@@ -1148,7 +1148,7 @@ impl Rational {
         assert(s.num == 0);
     }
 
-    /// signum(a - a) == 0.
+    ///  signum(a - a) == 0.
     pub proof fn lemma_sub_self_zero_signum(a: Self)
         ensures
             a.sub_spec(a).signum() == 0,
@@ -1161,7 +1161,7 @@ impl Rational {
         assert(s.signum() == 0);
     }
 
-    /// a.num == 0 → (a * b).num == 0.
+    ///  a.num == 0 → (a * b).num == 0.
     pub proof fn lemma_mul_left_zero_num(a: Self, b: Self)
         requires
             a.num == 0,
@@ -1185,7 +1185,7 @@ impl Rational {
         assert(p.num == 0);
     }
 
-    /// b.num == 0 → (a * b).num == 0.
+    ///  b.num == 0 → (a * b).num == 0.
     pub proof fn lemma_mul_right_zero_num(a: Self, b: Self)
         requires
             b.num == 0,
@@ -1209,7 +1209,7 @@ impl Rational {
         assert(p.num == 0);
     }
 
-    /// a.num == 0 ∧ b.num == 0 → (a - b).num == 0.
+    ///  a.num == 0 ∧ b.num == 0 → (a - b).num == 0.
     pub proof fn lemma_sub_both_zero_num(a: Self, b: Self)
         requires
             a.num == 0,
@@ -1258,4 +1258,4 @@ impl Rational {
 
 }
 
-} // verus!
+} //  verus!
