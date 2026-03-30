@@ -5,3 +5,6 @@ pub use rational::{Rational, RationalModel};
 
 pub mod runtime_rational;
 pub use runtime_rational::RuntimeRational;
+
+#[cfg(verus_keep_ghost)]
+pub mod runtime_ops;
