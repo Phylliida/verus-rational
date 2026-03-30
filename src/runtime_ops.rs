@@ -16,10 +16,10 @@ verus! {
 
 impl RuntimeRingOps<Rational> for RuntimeRational {
     #[verifier::inline]
-    open spec fn view(&self) -> Rational { self@ }
+    open spec fn model(&self) -> Rational { self@ }
 
     #[verifier::inline]
-    open spec fn wf(&self) -> bool { self.wf_spec() }
+    open spec fn wf_spec(&self) -> bool { RuntimeRational::wf_spec(self) }
 
     fn add(&self, rhs: &Self) -> (out: Self) { RuntimeRational::add(self, rhs) }
     fn sub(&self, rhs: &Self) -> (out: Self) { RuntimeRational::sub(self, rhs) }
