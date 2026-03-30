@@ -1,4 +1,6 @@
 ///  RuntimeRational implements the runtime trait hierarchy from verus-algebra.
+///  Uses fully-qualified syntax (RuntimeRational::method) to delegate to inherent methods,
+///  avoiding recursion since trait methods share the same names.
 use crate::RuntimeRational;
 
 #[cfg(verus_keep_ghost)]
@@ -14,30 +16,29 @@ verus! {
 
 impl RuntimeRingOps<Rational> for RuntimeRational {
     #[verifier::inline]
-    open spec fn rf_view(&self) -> Rational { self@ }
+    open spec fn view(&self) -> Rational { self@ }
 
     #[verifier::inline]
-    open spec fn wf_spec(&self) -> bool { self.wf_spec() }
+    open spec fn wf(&self) -> bool { self.wf_spec() }
 
-    fn rf_add(&self, rhs: &Self) -> (out: Self) { self.add(rhs) }
-    fn rf_sub(&self, rhs: &Self) -> (out: Self) { self.sub(rhs) }
-    fn rf_neg(&self) -> (out: Self) { self.neg() }
-    fn rf_mul(&self, rhs: &Self) -> (out: Self) { self.mul(rhs) }
-    fn rf_eq(&self, rhs: &Self) -> (out: bool) { self.eq(rhs) }
-    fn rf_copy(&self) -> (out: Self) { crate::runtime_rational::copy_rational(self) }
-
-    fn rf_zero_like(&self) -> (out: Self) { RuntimeRational::from_int(0) }
-    fn rf_one_like(&self) -> (out: Self) { RuntimeRational::from_int(1) }
+    fn add(&self, rhs: &Self) -> (out: Self) { RuntimeRational::add(self, rhs) }
+    fn sub(&self, rhs: &Self) -> (out: Self) { RuntimeRational::sub(self, rhs) }
+    fn neg(&self) -> (out: Self) { RuntimeRational::neg(self) }
+    fn mul(&self, rhs: &Self) -> (out: Self) { RuntimeRational::mul(self, rhs) }
+    fn eq(&self, rhs: &Self) -> (out: bool) { RuntimeRational::eq(self, rhs) }
+    fn copy(&self) -> (out: Self) { crate::runtime_rational::copy_rational(self) }
+    fn zero_like(&self) -> (out: Self) { RuntimeRational::from_int(0) }
+    fn one_like(&self) -> (out: Self) { RuntimeRational::from_int(1) }
 }
 
 impl RuntimeFieldOps<Rational> for RuntimeRational {
-    fn rf_recip(&self) -> (out: Self) { self.recip().unwrap() }
-    fn rf_div(&self, rhs: &Self) -> (out: Self) { self.div(rhs) }
+    fn recip(&self) -> (out: Self) { RuntimeRational::recip(self).unwrap() }
+    fn div(&self, rhs: &Self) -> (out: Self) { RuntimeRational::div(self, rhs) }
 }
 
 impl RuntimeOrderedFieldOps<Rational> for RuntimeRational {
-    fn rf_le(&self, rhs: &Self) -> (out: bool) { self.le(rhs) }
-    fn rf_lt(&self, rhs: &Self) -> (out: bool) { self.lt(rhs) }
+    fn le(&self, rhs: &Self) -> (out: bool) { RuntimeRational::le(self, rhs) }
+    fn lt(&self, rhs: &Self) -> (out: bool) { RuntimeRational::lt(self, rhs) }
 }
 
 } //  verus!
