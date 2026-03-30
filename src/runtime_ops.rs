@@ -25,6 +25,7 @@ impl RuntimeRingOps<Rational> for RuntimeRational {
     fn rf_mul(&self, rhs: &Self) -> (out: Self) { self.mul(rhs) }
     fn rf_eq(&self, rhs: &Self) -> (out: bool) { self.eq(rhs) }
     fn rf_copy(&self) -> (out: Self) { crate::runtime_rational::copy_rational(self) }
+
     fn rf_zero_like(&self) -> (out: Self) { RuntimeRational::from_int(0) }
     fn rf_one_like(&self) -> (out: Self) { RuntimeRational::from_int(1) }
 }
