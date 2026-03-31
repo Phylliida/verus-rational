@@ -16,9 +16,6 @@ verus! {
 
 impl RuntimeRingOps<Rational> for RuntimeRational {
     #[verifier::inline]
-    open spec fn model(&self) -> Rational { self@ }
-
-    #[verifier::inline]
     open spec fn wf_spec(&self) -> bool { RuntimeRational::wf_spec(self) }
 
     fn add(&self, rhs: &Self) -> (out: Self) { RuntimeRational::add(self, rhs) }
