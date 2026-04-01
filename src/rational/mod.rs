@@ -109,6 +109,38 @@ impl Rational {
         Rational { num: 1, den: 0 }
     }
 
+    ///  Spec-level canonical normalization via choose.
+    ///  Picks the unique normalized representative of the equivalence class.
+    pub open spec fn canonical(self) -> Self {
+        choose|m: Rational| m.eqv_spec(self) && m.normalized_spec()
+    }
+
+    ///  The canonical form exists (from normalize_constructive).
+    pub proof fn lemma_canonical_exists(a: Self)
+        ensures
+            a.canonical().eqv_spec(a),
+            a.canonical().normalized_spec(),
+    {
+        let m = Self::normalize_constructive(a);
+        assert(m.eqv_spec(a) && m.normalized_spec());
+    }
+
+    ///  Any normalized value eqv to a equals a.canonical().
+    pub proof fn lemma_canonical_unique(a: Self, b: Self)
+        requires b.eqv_spec(a), b.normalized_spec(),
+        ensures b == a.canonical(),
+    {
+        Self::lemma_canonical_exists(a);
+        let c = a.canonical();
+        //  c is normalized + eqv to a
+        //  b is normalized + eqv to a
+        //  So c.eqv(a).eqv(b) → c.eqv(b)
+        Self::lemma_eqv_symmetric(c, a);
+        Self::lemma_eqv_transitive(b, a, c);
+        //  b.eqv(c), both normalized → b == c
+        Self::lemma_normalized_eqv_implies_equal(b, c);
+    }
+
     ///  Spec-level addition: a/b + c/d = (a*d + c*b) / (b*d).
     pub open spec fn add_spec(self, rhs: Self) -> Self {
         let d1 = self.denom_nat();
