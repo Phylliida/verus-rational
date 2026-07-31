@@ -1338,21 +1338,14 @@ impl RuntimeRational {
         let abs_num_copy = abs_num.copy_small_total();
         let den_copy = self.denominator.copy_small_total();
 
-        //  Handle zero numerator: already normalized (den witness = 1 would
-        //  be ideal, but the current form is valid; skip GCD).
+        //  Handle zero numerator: return fresh 0/1 witnesses. (An earlier
+        //  version kept the original witnesses — valid, but a zero with a
+        //  huge unreduced denominator never shrank, which made ledgers in
+        //  zero-valued scenes grow linearly forever; see physics-gears
+        //  memory/exec-feasibility-and-normalize.md.)
         let num_is_zero = abs_num.is_zero();
         if num_is_zero {
-            //  Canonical zero is from_int(0) = Rational { num: 0, den: 0 }
-            let ghost canonical_zero = RationalModel::from_int_spec(0);
-            let out = RuntimeRational {
-                numerator: self.numerator.copy_small_total(),
-                denominator: self.denominator.copy_small_total(),
-                model: Ghost(canonical_zero),
-            };
             proof {
-                RationalModel::lemma_from_int_is_normalized(0);
-                //  canonical_zero.normalized_spec() ✓
-
                 //  Show self@.num == 0 from wf_spec + numerator witness = 0
                 let sn: int = self.numerator.model@;
                 let sd: int = self.denominator.model@ as int;
@@ -1365,14 +1358,15 @@ impl RuntimeRational {
                 assert(self@.num == 0) by (nonlinear_arith)
                     requires self@.num * sd == 0, sd > 0;
 
-                //  eqv: self@.num * canonical_zero.denom() == canonical_zero.num * self@.denom()
-                //  0 * 1 == 0 * self@.denom() → 0 == 0 ✓
+                //  eqv: self@ ≡ from_int_spec(0); flip for out@.eqv_spec(self@)
                 RationalModel::lemma_eqv_zero_iff_num_zero(self@);
+                RationalModel::lemma_eqv_symmetric(
+                    RationalModel::from_int_spec(0), self@);
 
-                //  wf_spec: numerator.model@ * canonical_zero.denom() == canonical_zero.num * denominator.model@
-                //  0 * 1 == 0 * sd → 0 == 0 ✓
+                //  normalized: from_int(0) is normalized
+                RationalModel::lemma_from_int_is_normalized(0);
             }
-            return out;
+            return RuntimeRational::from_int(0);
         }
 
         proof {
